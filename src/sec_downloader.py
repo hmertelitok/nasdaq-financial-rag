@@ -1,0 +1,1 @@
+# SEC EDGAR üzerinden 10-K raporlarını indirme işlemleri bu dosyada geliştirilecektir.

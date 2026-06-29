@@ -1,0 +1,1 @@
+# Temizlenen rapor metinlerini RAG yapısına uygun chunk parçalarına ayırma işlemleri burada yapılacaktır.

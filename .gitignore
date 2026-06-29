@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.local
+
+# Data files
+data/raw/*
+data/processed/*
+data/chunks/*
+data/embeddings/*
+
+# Keep folder structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/chunks/.gitkeep
+!data/embeddings/.gitkeep
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3

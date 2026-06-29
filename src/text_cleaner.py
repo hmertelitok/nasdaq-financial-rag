@@ -1,0 +1,1 @@
+# SEC raporlarından çıkarılan ham metinlerin temizleme işlemleri bu dosyada yapılacaktır.

@@ -1,0 +1,1 @@
+# Chunk metinleri için embedding üretme işlemleri bu dosyada geliştirilecektir.

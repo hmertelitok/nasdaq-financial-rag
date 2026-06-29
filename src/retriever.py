@@ -1,0 +1,1 @@
+# Kullanıcı sorusuna en yakın doküman parçalarını getiren vector search yapısı burada geliştirilecektir.
