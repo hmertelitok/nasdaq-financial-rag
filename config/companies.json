@@ -1,0 +1,32 @@
+[
+  {
+    "ticker": "AAPL",
+    "company_name": "Apple Inc.",
+    "cik": "0000320193",
+    "sector": "Technology"
+  },
+  {
+    "ticker": "MSFT",
+    "company_name": "Microsoft Corporation",
+    "cik": "0000789019",
+    "sector": "Technology"
+  },
+  {
+    "ticker": "NVDA",
+    "company_name": "NVIDIA Corporation",
+    "cik": "0001045810",
+    "sector": "Technology"
+  },
+  {
+    "ticker": "AMZN",
+    "company_name": "Amazon.com, Inc.",
+    "cik": "0001018724",
+    "sector": "Consumer Discretionary"
+  },
+  {
+    "ticker": "GOOGL",
+    "company_name": "Alphabet Inc.",
+    "cik": "0001652044",
+    "sector": "Communication Services"
+  }
+]
