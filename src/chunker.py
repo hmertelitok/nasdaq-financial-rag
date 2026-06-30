@@ -30,31 +30,31 @@ CHUNK_OVERLAP_WORDS = 120
 SECTION_PATTERNS = {
     "Business": [
         "item 1. business",
-        "item 1 business"
+        "item 1 business",
     ],
     "Risk Factors": [
         "item 1a. risk factors",
         "item 1a risk factors",
-        "risk factors"
+        "risk factors",
     ],
     "Legal Proceedings": [
         "item 3. legal proceedings",
-        "item 3 legal proceedings"
+        "item 3 legal proceedings",
     ],
     "Management Discussion and Analysis": [
         "item 7. management’s discussion and analysis",
         "item 7. management's discussion and analysis",
         "management’s discussion and analysis",
-        "management's discussion and analysis"
+        "management's discussion and analysis",
     ],
     "Market Risk": [
         "item 7a. quantitative and qualitative disclosures about market risk",
-        "quantitative and qualitative disclosures about market risk"
+        "quantitative and qualitative disclosures about market risk",
     ],
     "Financial Statements": [
         "item 8. financial statements",
-        "financial statements and supplementary data"
-    ]
+        "financial statements and supplementary data",
+    ],
 }
 
 
@@ -113,7 +113,7 @@ def split_text_into_words(text: str) -> List[str]:
 def create_chunks_from_text(
     text: str,
     chunk_size: int = CHUNK_SIZE_WORDS,
-    overlap: int = CHUNK_OVERLAP_WORDS
+    overlap: int = CHUNK_OVERLAP_WORDS,
 ) -> List[str]:
     """Metni belirlenen kelime sayısına göre overlap kullanarak chunk parçalarına ayırır."""
     words = split_text_into_words(text)
@@ -172,25 +172,27 @@ def create_chunk_records_for_filing(filing: Dict[str, Any]) -> List[Dict[str, An
             ticker=ticker,
             filing_type=filing_type,
             filing_date=filing_date,
-            index=index
+            index=index,
         )
 
         section = detect_section(chunk_text)
 
-        chunk_records.append({
-            "chunk_id": chunk_id,
-            "ticker": ticker,
-            "company_name": company_name,
-            "sector": filing.get("sector"),
-            "filing_type": filing_type,
-            "filing_date": filing_date,
-            "section": section,
-            "chunk_index": index,
-            "word_count": len(chunk_text.split()),
-            "source_document_url": filing.get("document_url"),
-            "source_local_path": processed_text_path,
-            "text": chunk_text
-        })
+        chunk_records.append(
+            {
+                "chunk_id": chunk_id,
+                "ticker": ticker,
+                "company_name": company_name,
+                "sector": filing.get("sector"),
+                "filing_type": filing_type,
+                "filing_date": filing_date,
+                "section": section,
+                "chunk_index": index,
+                "word_count": len(chunk_text.split()),
+                "source_document_url": filing.get("document_url"),
+                "source_local_path": processed_text_path,
+                "text": chunk_text,
+            }
+        )
 
     print(f"{ticker} için {len(chunk_records)} chunk üretildi.")
 
