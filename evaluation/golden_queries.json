@@ -1,0 +1,102 @@
+[
+  {
+    "query_id": "AAPL_SUPPLY_REGULATION",
+    "ticker": "AAPL",
+    "query": "Apple son 10-K raporunda tedarik zinciri, Çin pazarı, regülasyon ve rekabet açısından hangi riskleri açıklıyor?",
+    "expected_sections": ["Risk Factors", "Business", "Legal Proceedings"],
+    "expected_terms": ["supply", "supplier", "manufacturing", "china", "regulatory", "competition", "privacy", "app store"],
+    "manual_relevant_chunk_ids": [],
+    "manual_partially_relevant_chunk_ids": [],
+    "manual_irrelevant_chunk_ids": []
+  },
+  {
+    "query_id": "AAPL_AI_PRIVACY",
+    "ticker": "AAPL",
+    "query": "Apple yapay zeka özellikleri, veri gizliliği ve ürün güvenliğiyle ilgili hangi riskleri belirtiyor?",
+    "expected_sections": ["Risk Factors", "Business", "Cybersecurity"],
+    "expected_terms": ["artificial intelligence", "privacy", "security", "software", "services", "product", "vulnerabilities"],
+    "manual_relevant_chunk_ids": [],
+    "manual_partially_relevant_chunk_ids": [],
+    "manual_irrelevant_chunk_ids": []
+  },
+  {
+    "query_id": "MSFT_AI_CLOUD_SECURITY",
+    "ticker": "MSFT",
+    "query": "Microsoft yapay zeka, Azure, bulut, veri merkezi ve siber güvenlik riskleri hakkında ne açıklıyor?",
+    "expected_sections": ["Risk Factors", "Business", "Cybersecurity"],
+    "expected_terms": ["artificial intelligence", "azure", "cloud", "data center", "datacenter", "cybersecurity", "security", "privacy"],
+    "manual_relevant_chunk_ids": [],
+    "manual_partially_relevant_chunk_ids": [],
+    "manual_irrelevant_chunk_ids": []
+  },
+  {
+    "query_id": "MSFT_REGULATORY_COMPETITION",
+    "ticker": "MSFT",
+    "query": "Microsoft regülasyon, rekabet hukuku, veri kullanımı ve compliance riskleri açısından hangi konuları açıklıyor?",
+    "expected_sections": ["Risk Factors", "Business", "Legal Proceedings"],
+    "expected_terms": ["regulatory", "regulation", "compliance", "antitrust", "privacy", "data", "competition", "legal"],
+    "manual_relevant_chunk_ids": [],
+    "manual_partially_relevant_chunk_ids": [],
+    "manual_irrelevant_chunk_ids": []
+  },
+  {
+    "query_id": "NVDA_EXPORT_CHINA",
+    "ticker": "NVDA",
+    "query": "NVIDIA ihracat kontrolleri, Çin pazarı ve yapay zeka çipleriyle ilgili hangi riskleri açıklıyor?",
+    "expected_sections": ["Risk Factors", "Business", "Legal Proceedings"],
+    "expected_terms": ["export controls", "china", "chinese", "artificial intelligence", "gpu", "data center", "restrictions", "competition"],
+    "manual_relevant_chunk_ids": [],
+    "manual_partially_relevant_chunk_ids": [],
+    "manual_irrelevant_chunk_ids": []
+  },
+  {
+    "query_id": "NVDA_SUPPLY_DATACENTER",
+    "ticker": "NVDA",
+    "query": "NVIDIA veri merkezi talebi, tedarik, satın alma taahhütleri ve üretim kapasitesi hakkında hangi riskleri belirtiyor?",
+    "expected_sections": ["Risk Factors", "Business"],
+    "expected_terms": ["data center", "datacenter", "supply", "purchase obligations", "non-cancellable", "non-returnable", "manufacturing", "demand"],
+    "manual_relevant_chunk_ids": [],
+    "manual_partially_relevant_chunk_ids": [],
+    "manual_irrelevant_chunk_ids": []
+  },
+  {
+    "query_id": "AMZN_AWS_OPERATIONS",
+    "ticker": "AMZN",
+    "query": "Amazon AWS, lojistik, fulfillment, operasyonel maliyetler ve rekabet riskleri hakkında ne açıklıyor?",
+    "expected_sections": ["Risk Factors", "Business", "Market Risk"],
+    "expected_terms": ["aws", "cloud", "fulfillment", "logistics", "transportation", "delivery", "competition", "operations"],
+    "manual_relevant_chunk_ids": [],
+    "manual_partially_relevant_chunk_ids": [],
+    "manual_irrelevant_chunk_ids": []
+  },
+  {
+    "query_id": "AMZN_PRIVACY_REGULATION",
+    "ticker": "AMZN",
+    "query": "Amazon veri gizliliği, regülasyon, pazar yeri ve yasal süreçlerle ilgili hangi riskleri açıklıyor?",
+    "expected_sections": ["Risk Factors", "Business", "Legal Proceedings"],
+    "expected_terms": ["privacy", "data protection", "regulatory", "regulation", "marketplace", "legal proceedings", "competition", "consumer protection"],
+    "manual_relevant_chunk_ids": [],
+    "manual_partially_relevant_chunk_ids": [],
+    "manual_irrelevant_chunk_ids": []
+  },
+  {
+    "query_id": "GOOGL_ADS_ANTITRUST",
+    "ticker": "GOOGL",
+    "query": "Alphabet reklam pazarı, arama gelirleri, YouTube ve antitröst süreçleri hakkında hangi riskleri açıklıyor?",
+    "expected_sections": ["Risk Factors", "Business", "Legal Proceedings"],
+    "expected_terms": ["advertising", "ads", "search", "youtube", "antitrust", "competition", "legal proceedings", "regulatory"],
+    "manual_relevant_chunk_ids": [],
+    "manual_partially_relevant_chunk_ids": [],
+    "manual_irrelevant_chunk_ids": []
+  },
+  {
+    "query_id": "GOOGL_AI_PRIVACY_CLOUD",
+    "ticker": "GOOGL",
+    "query": "Alphabet yapay zeka, bulut, veri gizliliği, cybersecurity ve veri koruma riskleri hakkında ne açıklıyor?",
+    "expected_sections": ["Risk Factors", "Business", "Cybersecurity"],
+    "expected_terms": ["artificial intelligence", "ai", "cloud", "privacy", "data protection", "cybersecurity", "security", "machine learning"],
+    "manual_relevant_chunk_ids": [],
+    "manual_partially_relevant_chunk_ids": [],
+    "manual_irrelevant_chunk_ids": []
+  }
+]

@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
+from section_utils import polish_section_label
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -470,7 +472,12 @@ def calculate_coverage_score(text: str, terms: List[str], denominator_limit: int
     return min(matched / denominator, 1.0)
 
 
-def calculate_penalty(query: str, chunk: Dict[str, Any], focus_score: float, coverage_score: float) -> float:
+def calculate_penalty(
+    query: str,
+    chunk: Dict[str, Any],
+    focus_score: float,
+    coverage_score: float,
+) -> float:
     text = chunk.get("text", "")
     section = chunk.get("section", "Unknown")
     normalized_query = normalize_text(query)
@@ -523,13 +530,23 @@ def calculate_penalty(query: str, chunk: Dict[str, Any], focus_score: float, cov
     if section == "Financial Statements" and focus_score < 0.25:
         penalty += 0.08
 
+    if section in {"Executive Compensation", "Principal Accountant Fees"}:
+        penalty += 0.18
+
+    if section == "Properties" and focus_score < 0.25:
+        penalty += 0.10
+
     if focus_score == 0 and coverage_score < 0.15:
         penalty += 0.08
 
     return penalty
 
 
-def calculate_section_bonus(query: str, chunk: Dict[str, Any], focus_score: float) -> float:
+def calculate_section_bonus(
+    query: str,
+    chunk: Dict[str, Any],
+    focus_score: float,
+) -> float:
     section = chunk.get("section", "Unknown")
     normalized_query = normalize_text(query)
 
@@ -580,6 +597,12 @@ def calculate_section_bonus(query: str, chunk: Dict[str, Any], focus_score: floa
 
     if section == "Risk Factors" and risk_query:
         return 0.10
+
+    if section == "Cybersecurity" and contains_any(
+        normalized_query,
+        ["cybersecurity", "security", "siber güvenlik", "gizlilik", "privacy"],
+    ):
+        return 0.08
 
     if section == "Business" and focus_score >= 0.20:
         return 0.06
@@ -680,8 +703,11 @@ def diversify_results(
         if section == "Business":
             section_limit = 3
 
-        if section in {"Legal Proceedings", "Market Risk"}:
+        if section in {"Legal Proceedings", "Market Risk", "Cybersecurity"}:
             section_limit = 2
+
+        if section in {"Properties", "Principal Accountant Fees", "Executive Compensation"}:
+            section_limit = 1
 
         if section == "Unknown":
             section_limit = 1
@@ -729,7 +755,15 @@ def search_relevant_chunks(
     candidate_rows = []
 
     for local_index, global_index in enumerate(selected_indices):
-        chunk = chunks[global_index]
+        raw_chunk = chunks[global_index]
+        chunk = dict(raw_chunk)
+
+        raw_section = chunk.get("section", "Unknown")
+        polished_section = polish_section_label(chunk)
+
+        chunk["raw_section"] = raw_section
+        chunk["section"] = polished_section
+
         original_score = float(semantic_scores[local_index])
         adjusted_score = calculate_adjusted_score(query, chunk, original_score)
 
@@ -763,6 +797,7 @@ def print_retrieval_results(results: List[Dict[str, Any]]) -> None:
         print("=" * 80)
         print(f"{index}. {result.get('ticker')} - {result.get('company_name')}")
         print(f"Section: {result.get('section')}")
+        print(f"Raw Section: {result.get('raw_section', result.get('section'))}")
         print(f"Chunk ID: {result.get('chunk_id')}")
         print(f"Semantic Score: {result.get('original_score')}")
         print(f"Hybrid Score: {result.get('score')}")
