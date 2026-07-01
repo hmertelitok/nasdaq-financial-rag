@@ -8,3 +8,5 @@ python-dotenv
 foundry-local-sdk-winml
 openai
 sentence-transformers
+torch
+torchvision
