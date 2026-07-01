@@ -1,3 +1,4 @@
+import atexit
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -10,6 +11,11 @@ from retriever import search_relevant_chunks
 DEFAULT_MODEL_ALIAS = "qwen2.5-7b"
 CONTEXT_CHUNK_CHAR_LIMIT = 1000
 DEBUG_CONTEXT = False
+
+_FOUNDRY_MANAGER: Optional[Any] = None
+_FOUNDRY_MODEL: Optional[Any] = None
+_FOUNDRY_CLIENT: Optional[openai.OpenAI] = None
+_FOUNDRY_MODEL_ALIAS: Optional[str] = None
 
 SUPPORTED_COMPANIES = {
     "AAPL": "Apple Inc.",
@@ -490,6 +496,34 @@ def generate_source_based_answer(
 def prepare_foundry_local(
     model_alias: str = DEFAULT_MODEL_ALIAS,
 ) -> Tuple[Any, Any, openai.OpenAI]:
+    """
+    Foundry Local modelini tek sefer yükler ve aynı Python oturumu boyunca cache'te tutar.
+
+    Streamlit tarafında her buton tıklamasında script yeniden çalışsa bile import edilen
+    rag_assistant modülü aynı process içinde kaldığı sürece model tekrar tekrar yüklenmez.
+    """
+    global _FOUNDRY_MANAGER
+    global _FOUNDRY_MODEL
+    global _FOUNDRY_CLIENT
+    global _FOUNDRY_MODEL_ALIAS
+
+    if (
+        _FOUNDRY_MANAGER is not None
+        and _FOUNDRY_MODEL is not None
+        and _FOUNDRY_CLIENT is not None
+        and _FOUNDRY_MODEL_ALIAS == model_alias
+    ):
+        print(f"Foundry Local modeli cache üzerinden kullanılıyor: {model_alias}")
+        return _FOUNDRY_MANAGER, _FOUNDRY_MODEL, _FOUNDRY_CLIENT
+
+    if _FOUNDRY_MANAGER is not None or _FOUNDRY_MODEL is not None:
+        close_foundry_local(_FOUNDRY_MANAGER, _FOUNDRY_MODEL)
+
+        _FOUNDRY_MANAGER = None
+        _FOUNDRY_MODEL = None
+        _FOUNDRY_CLIENT = None
+        _FOUNDRY_MODEL_ALIAS = None
+
     print("Foundry Local başlatılıyor...")
 
     config = Configuration(app_name="nasdaq_financial_rag")
@@ -507,7 +541,7 @@ def prepare_foundry_local(
 
     model.download(
         lambda progress: print(
-            f"\rModel indiriliyor: {progress:.2f}%",
+            f"Model indiriliyor: {progress:.2f}%",
             end="",
             flush=True,
         )
@@ -527,6 +561,11 @@ def prepare_foundry_local(
         api_key="none",
     )
 
+    _FOUNDRY_MANAGER = manager
+    _FOUNDRY_MODEL = model
+    _FOUNDRY_CLIENT = client
+    _FOUNDRY_MODEL_ALIAS = model_alias
+
     return manager, model, client
 
 
@@ -544,6 +583,30 @@ def close_foundry_local(manager: Any, model: Any) -> None:
             print("Model bellekten çıkarıldı.")
         except Exception as error:
             print(f"Model unload sırasında uyarı oluştu: {error}")
+
+
+def close_cached_foundry_local() -> None:
+    """
+    Uygulama kapanırken cache'te tutulan Foundry Local servisini ve modeli temizler.
+    Normal Streamlit analizi sırasında çağrılmaz.
+    """
+    global _FOUNDRY_MANAGER
+    global _FOUNDRY_MODEL
+    global _FOUNDRY_CLIENT
+    global _FOUNDRY_MODEL_ALIAS
+
+    if _FOUNDRY_MANAGER is None and _FOUNDRY_MODEL is None:
+        return
+
+    close_foundry_local(_FOUNDRY_MANAGER, _FOUNDRY_MODEL)
+
+    _FOUNDRY_MANAGER = None
+    _FOUNDRY_MODEL = None
+    _FOUNDRY_CLIENT = None
+    _FOUNDRY_MODEL_ALIAS = None
+
+
+atexit.register(close_cached_foundry_local)
 
 
 def generate_with_foundry_client(
@@ -570,15 +633,8 @@ def generate_with_foundry_local(
     prompt: str,
     model_alias: str = DEFAULT_MODEL_ALIAS,
 ) -> str:
-    manager = None
-    model = None
-
-    try:
-        manager, model, client = prepare_foundry_local(model_alias)
-        return generate_with_foundry_client(prompt, client, model.id)
-
-    finally:
-        close_foundry_local(manager, model)
+    _, model, client = prepare_foundry_local(model_alias)
+    return generate_with_foundry_client(prompt, client, model.id)
 
 
 def answer_question(
@@ -648,36 +704,32 @@ def answer_all_companies(
     use_foundry_local: bool = True,
 ) -> List[Dict[str, Any]]:
     results = []
-    manager = None
-    model = None
     client = None
+    model_id = None
 
-    try:
-        if use_foundry_local:
-            manager, model, client = prepare_foundry_local(DEFAULT_MODEL_ALIAS)
+    if use_foundry_local:
+        _, model, client = prepare_foundry_local(DEFAULT_MODEL_ALIAS)
+        model_id = model.id
 
-        for ticker in SUPPORTED_COMPANIES:
-            ticker_query = query if query else get_default_query(ticker)
+    for ticker in SUPPORTED_COMPANIES:
+        ticker_query = query if query else get_default_query(ticker)
 
-            print("\n" + "=" * 80)
-            print(f"{ticker} analiz ediliyor...")
-            print("=" * 80)
-            print(f"Sorgu: {ticker_query}")
+        print()
+        print("=" * 80)
+        print(f"{ticker} analiz ediliyor...")
+        print("=" * 80)
+        print(f"Sorgu: {ticker_query}")
 
-            result = answer_question(
-                query=ticker_query,
-                ticker=ticker,
-                top_k=top_k,
-                use_foundry_local=use_foundry_local,
-                foundry_client=client,
-                foundry_model_id=model.id if model is not None else None,
-            )
+        result = answer_question(
+            query=ticker_query,
+            ticker=ticker,
+            top_k=top_k,
+            use_foundry_local=use_foundry_local,
+            foundry_client=client,
+            foundry_model_id=model_id,
+        )
 
-            results.append(result)
-
-    finally:
-        if use_foundry_local:
-            close_foundry_local(manager, model)
+        results.append(result)
 
     return results
 
