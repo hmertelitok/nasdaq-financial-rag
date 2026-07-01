@@ -16,12 +16,16 @@ data/raw/*
 data/processed/*
 data/chunks/*
 data/embeddings/*
+data/evaluation/*.csv
+data/evaluation/*.jsonl
+*.pkl
 
 # Keep folder structure
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/chunks/.gitkeep
 !data/embeddings/.gitkeep
+!data/evaluation/.gitkeep
 
 # Streamlit
 .streamlit/secrets.toml
