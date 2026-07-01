@@ -5,3 +5,5 @@ requests
 beautifulsoup4
 scikit-learn
 python-dotenv
+foundry-local-sdk-winml
+openai
