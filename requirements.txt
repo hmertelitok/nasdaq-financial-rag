@@ -7,3 +7,4 @@ scikit-learn
 python-dotenv
 foundry-local-sdk-winml
 openai
+sentence-transformers

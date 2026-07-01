@@ -1,22 +1,12 @@
-"""
-Chunk metinleri için local vector store oluşturma modülü.
-
-Bu modülün görevleri:
-- data/chunks/filing_chunks.json dosyasını okumak
-- Chunk metinlerini vektör temsiline dönüştürmek
-- Vectorizer, vektör matrisi ve chunk metadata bilgilerini local olarak kaydetmek
-
-Not:
-İlk MVP sürümünde hızlı geliştirme için TF-IDF tabanlı local vector search kullanılmaktadır.
-Gelişmiş sürümde bu yapı Foundry Local embedding modeliyle değiştirilecektir.
-"""
-
 import json
+import os
 import pickle
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
+from sentence_transformers import SentenceTransformer
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -24,76 +14,102 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CHUNKS_PATH = PROJECT_ROOT / "data" / "chunks" / "filing_chunks.json"
 VECTOR_STORE_PATH = PROJECT_ROOT / "data" / "embeddings" / "vector_store.pkl"
 
+DEFAULT_EMBEDDING_MODEL = "intfloat/multilingual-e5-small"
+EMBEDDING_BATCH_SIZE = 16
+
 
 def load_chunks() -> List[Dict[str, Any]]:
-    """Chunk verilerini JSON dosyasından okur."""
     if not CHUNKS_PATH.exists():
         raise FileNotFoundError(
-            "filing_chunks.json bulunamadı. "
-            "Önce src/chunker.py dosyasını çalıştırmalısın."
+            "filing_chunks.json bulunamadı. Önce src/chunker.py çalıştırılmalı."
         )
 
     with open(CHUNKS_PATH, "r", encoding="utf-8") as file:
         return json.load(file)
 
 
-def build_corpus(chunks: List[Dict[str, Any]]) -> List[str]:
-    """
-    Vector search için kullanılacak metin listesini hazırlar.
+def build_passage_text(chunk: Dict[str, Any]) -> str:
+    ticker = chunk.get("ticker", "")
+    company_name = chunk.get("company_name", "")
+    section = chunk.get("section", "")
+    filing_type = chunk.get("filing_type", "")
+    filing_date = chunk.get("filing_date", "")
+    text = chunk.get("text", "")
 
-    Metadata bilgilerini de metne eklemek, arama kalitesini artırır.
-    """
-    corpus = []
-
-    for chunk in chunks:
-        metadata_text = (
-            f"{chunk.get('ticker', '')} "
-            f"{chunk.get('company_name', '')} "
-            f"{chunk.get('filing_type', '')} "
-            f"{chunk.get('section', '')} "
-        )
-
-        full_text = metadata_text + " " + chunk.get("text", "")
-        corpus.append(full_text)
-
-    return corpus
-
-
-def create_vector_store() -> None:
-    """Chunk metinlerinden local vector store oluşturur."""
-    chunks = load_chunks()
-    corpus = build_corpus(chunks)
-
-    print(f"Toplam chunk sayısı: {len(chunks)}")
-    print("Local vector store oluşturuluyor...")
-
-    vectorizer = TfidfVectorizer(
-        lowercase=True,
-        stop_words="english",
-        max_features=50000,
-        ngram_range=(1, 2)
+    passage = (
+        f"Ticker: {ticker}. "
+        f"Company: {company_name}. "
+        f"Filing: {filing_type}. "
+        f"Filing date: {filing_date}. "
+        f"Section: {section}. "
+        f"Content: {text}"
     )
 
-    vector_matrix = vectorizer.fit_transform(corpus)
+    return f"passage: {passage}"
+
+
+def create_embeddings(
+    chunks: List[Dict[str, Any]],
+    model_name: str,
+) -> np.ndarray:
+    model = SentenceTransformer(model_name)
+    passages = [build_passage_text(chunk) for chunk in chunks]
+
+    embeddings = model.encode(
+        passages,
+        batch_size=EMBEDDING_BATCH_SIZE,
+        show_progress_bar=True,
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+    )
+
+    return embeddings.astype(np.float32)
+
+
+def save_vector_store(
+    chunks: List[Dict[str, Any]],
+    embeddings: np.ndarray,
+    model_name: str,
+) -> None:
+    VECTOR_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     vector_store = {
-        "vectorizer": vectorizer,
-        "vector_matrix": vector_matrix,
-        "chunks": chunks
+        "retrieval_type": "semantic_embedding",
+        "embedding_provider": "sentence-transformers",
+        "embedding_model": model_name,
+        "embedding_created_at": datetime.now().isoformat(timespec="seconds"),
+        "embedding_shape": embeddings.shape,
+        "chunks": chunks,
+        "embeddings": embeddings,
     }
-
-    VECTOR_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     with open(VECTOR_STORE_PATH, "wb") as file:
         pickle.dump(vector_store, file)
 
     print(f"Vector store kaydedildi: {VECTOR_STORE_PATH}")
-    print(f"Vector matrix boyutu: {vector_matrix.shape}")
+    print(f"Embedding matrix boyutu: {embeddings.shape}")
+    print(f"Embedding modeli: {model_name}")
 
 
 def main() -> None:
-    """Vector store üretim sürecini çalıştırır."""
-    create_vector_store()
+    model_name = os.getenv("EMBEDDING_MODEL_NAME", DEFAULT_EMBEDDING_MODEL)
+
+    chunks = load_chunks()
+
+    print(f"Toplam chunk sayısı: {len(chunks)}")
+    print(f"Semantic embedding modeli yükleniyor: {model_name}")
+    print("Embedding üretimi başlıyor...")
+
+    embeddings = create_embeddings(
+        chunks=chunks,
+        model_name=model_name,
+    )
+
+    save_vector_store(
+        chunks=chunks,
+        embeddings=embeddings,
+        model_name=model_name,
+    )
 
 
 if __name__ == "__main__":
