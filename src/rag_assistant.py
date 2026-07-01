@@ -37,6 +37,14 @@ def normalize_output_text(text: str) -> str:
         "yatırım tavsiyes\n": "yatırım tavsiyesi değildir.\n",
         "olumlu veya olumsuz etki": "olumsuz etki",
         "olumlu ya da olumsuz etki": "olumsuz etki",
+        "Apple'nın": "Apple’ın",
+        "Apple'in": "Apple’ın",
+        "Microsoft'un": "Microsoft’un",
+        "NVIDIA'nın": "NVIDIA’nın",
+        "Amazon'un": "Amazon’un",
+        "Alphabet'in": "Alphabet’in",
+        "veri gizlilik": "veri gizliliği",
+        "tedarik hizmetleri": "tedarik süreçleri",
     }
 
     for wrong, correct in replacements.items():
@@ -152,9 +160,33 @@ def is_invalid_answer(answer: str) -> bool:
         "tarim",
         "yatırım tavsiyes",
         "bağlantılıriskler",
+        "apple'nın",
+        "veri gizlilik",
     ]
 
     if any(term in lower_answer for term in invalid_terms):
+        return True
+
+    required_sections = [
+        "1. kısa cevap",
+        "2. öne çıkan riskler",
+        "3. kullanılan kaynaklar",
+        "4. uyarı",
+    ]
+
+    if any(section not in lower_answer for section in required_sections):
+        return True
+
+    if "yatırım tavsiyesi değildir" not in lower_answer:
+        return True
+
+    if "kaynak 1, kaynak 1" in lower_answer:
+        return True
+
+    if "kullanılan kaynaklar: 1, 1" in lower_answer:
+        return True
+
+    if "kullanılan kaynaklar: kaynak 1, kaynak 1" in lower_answer:
         return True
 
     sentences = [sentence.strip() for sentence in answer.split(".") if sentence.strip()]
@@ -169,6 +201,233 @@ def is_invalid_answer(answer: str) -> bool:
     return False
 
 
+def add_unique_risk(
+    risk_items: List[str],
+    condition: bool,
+    risk_text: str,
+) -> None:
+    if condition and risk_text not in risk_items:
+        risk_items.append(risk_text)
+
+
+def build_company_specific_risk_items(ticker: str, full_text: str) -> List[str]:
+    risk_items = []
+
+    if ticker == "AAPL":
+        add_unique_risk(
+            risk_items,
+            "iphone" in full_text
+            or "ipad" in full_text
+            or "mac" in full_text
+            or "wearables" in full_text
+            or "services" in full_text
+            or "product" in full_text,
+            "Ürün talebi, yeni ürün döngüleri ve hizmet gelirlerindeki değişimler Apple’ın gelir büyümesi ve kâr marjları üzerinde baskı oluşturabilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "supply" in full_text
+            or "supplier" in full_text
+            or "manufacturing" in full_text
+            or "china" in full_text
+            or "inventory" in full_text,
+            "Tedarik zinciri, üretim ortakları, stok yönetimi ve Çin merkezli operasyonel bağımlılıklar ürün bulunabilirliğini ve maliyetleri olumsuz etkileyebilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "app store" in full_text
+            or "regulation" in full_text
+            or "regulatory" in full_text
+            or "privacy" in full_text
+            or "digital markets" in full_text
+            or "antitrust" in full_text,
+            "App Store, veri gizliliği, dijital pazar düzenlemeleri ve rekabet hukuku kaynaklı regülasyonlar Apple’ın hizmet gelirleri ve iş modeli üzerinde baskı yaratabilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "competition" in full_text
+            or "competitive" in full_text
+            or "market" in full_text,
+            "Akıllı telefon, bilgisayar, giyilebilir cihaz ve dijital hizmet pazarlarındaki yoğun rekabet fiyatlama gücünü ve pazar payını olumsuz etkileyebilir.",
+        )
+
+    elif ticker == "MSFT":
+        add_unique_risk(
+            risk_items,
+            "cloud" in full_text
+            or "azure" in full_text
+            or "data center" in full_text
+            or "datacenter" in full_text
+            or "artificial intelligence" in full_text
+            or "ai" in full_text,
+            "Azure, yapay zeka ve veri merkezi ölçeğindeki büyüme yüksek altyapı yatırımı, kapasite planlaması ve operasyonel maliyet baskısı oluşturabilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "cybersecurity" in full_text
+            or "security" in full_text
+            or "privacy" in full_text
+            or "data" in full_text,
+            "Siber güvenlik, veri gizliliği ve müşteri verilerinin korunmasına ilişkin riskler itibar, müşteri güveni ve yasal sorumluluklar üzerinde olumsuz etki yaratabilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "regulation" in full_text
+            or "regulatory" in full_text
+            or "antitrust" in full_text
+            or "legal proceedings" in full_text
+            or "compliance" in full_text,
+            "Yapay zeka, bulut hizmetleri, veri kullanımı ve rekabet hukuku alanındaki düzenleyici denetimler Microsoft’un ürün stratejisini ve faaliyet sonuçlarını etkileyebilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "competition" in full_text
+            or "competitive" in full_text
+            or "competitors" in full_text,
+            "Bulut, üretken yapay zeka, işletim sistemleri, oyun ve verimlilik yazılımlarındaki yoğun rekabet büyüme beklentilerini ve marjları baskılayabilir.",
+        )
+
+    elif ticker == "NVDA":
+        add_unique_risk(
+            risk_items,
+            "artificial intelligence" in full_text
+            or "accelerated computing" in full_text
+            or "data center" in full_text
+            or "datacenter" in full_text
+            or "gpu" in full_text
+            or "blackwell" in full_text,
+            "Yapay zeka ve veri merkezi talebindeki hızlı büyüme NVIDIA için yüksek üretim kapasitesi, teknoloji geçişleri ve müşteri beklentileri açısından operasyonel baskı oluşturabilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "export controls" in full_text
+            or "china" in full_text
+            or "restrictions" in full_text
+            or "chinese government" in full_text,
+            "İhracat kontrolleri, Çin pazarı ve ülke bazlı düzenleyici kısıtlamalar NVIDIA’nın veri merkezi gelirlerini ve uluslararası rekabet gücünü baskılayabilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "supply" in full_text
+            or "supplier" in full_text
+            or "purchase obligations" in full_text
+            or "non-cancellable" in full_text
+            or "non-returnable" in full_text,
+            "Tedarik zinciri, iptal edilemeyen satın alma taahhütleri ve arz-talep tahminlerindeki sapmalar maliyetleri, gelir zamanlamasını ve brüt kâr marjlarını olumsuz etkileyebilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "competition" in full_text
+            or "competitors" in full_text
+            or "competitive" in full_text
+            or "hyperscaler" in full_text,
+            "Hızlandırılmış hesaplama, yapay zeka çipleri ve hyperscaler müşteri segmentindeki rekabet NVIDIA’nın pazar konumunu ve fiyatlama gücünü etkileyebilir.",
+        )
+
+    elif ticker == "AMZN":
+        add_unique_risk(
+            risk_items,
+            "aws" in full_text
+            or "cloud" in full_text
+            or "technology" in full_text
+            or "data center" in full_text
+            or "artificial intelligence" in full_text,
+            "AWS, bulut altyapısı ve yapay zeka yatırımları yüksek sermaye harcaması, kapasite planlaması ve yoğun rekabet nedeniyle finansal sonuçlar üzerinde baskı oluşturabilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "fulfillment" in full_text
+            or "logistics" in full_text
+            or "transportation" in full_text
+            or "delivery" in full_text
+            or "labor" in full_text,
+            "Lojistik, fulfillment ağı, teslimat operasyonları ve iş gücü maliyetleri Amazon’un operasyonel verimliliğini ve kâr marjlarını olumsuz etkileyebilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "inventory" in full_text
+            or "supply" in full_text
+            or "demand" in full_text
+            or "supplier" in full_text,
+            "Stok yönetimi, tedarik zinciri ve talep tahminlerindeki sapmalar maliyetleri artırabilir ve gelir zamanlamasını olumsuz etkileyebilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "regulation" in full_text
+            or "regulatory" in full_text
+            or "tax" in full_text
+            or "antitrust" in full_text
+            or "privacy" in full_text,
+            "E-ticaret, pazar yeri, vergi, rekabet hukuku ve veri gizliliği alanındaki düzenleyici baskılar Amazon’un faaliyetlerini ve iş modelini etkileyebilir.",
+        )
+
+    elif ticker == "GOOGL":
+        add_unique_risk(
+            risk_items,
+            "advertising" in full_text
+            or "ads" in full_text
+            or "search" in full_text
+            or "youtube" in full_text,
+            "Reklam pazarı, arama gelirleri ve YouTube ekosistemindeki talep değişimleri Alphabet’in ana gelir kaynakları üzerinde baskı oluşturabilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "artificial intelligence" in full_text
+            or "ai" in full_text
+            or "machine learning" in full_text
+            or "cloud" in full_text,
+            "Yapay zeka, arama deneyimi ve bulut hizmetlerindeki hızlı teknoloji değişimi yüksek yatırım ihtiyacı ve rekabet baskısı yaratabilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "privacy" in full_text
+            or "data protection" in full_text
+            or "security" in full_text
+            or "regulation" in full_text
+            or "regulatory" in full_text,
+            "Veri gizliliği, kullanıcı verilerinin korunması ve düzenleyici yükümlülükler Alphabet’in reklam teknolojileri, ürün tasarımı ve faaliyet sonuçları üzerinde olumsuz etki yaratabilir.",
+        )
+
+        add_unique_risk(
+            risk_items,
+            "antitrust" in full_text
+            or "competition" in full_text
+            or "competitive" in full_text
+            or "legal proceedings" in full_text,
+            "Antitröst davaları, rekabet soruşturmaları ve yasal süreçler Alphabet’in iş modeli, ürün dağıtımı ve gelir yapısı üzerinde baskı oluşturabilir.",
+        )
+
+    if (
+        "tariffs" in full_text
+        or "inflation" in full_text
+        or "interest rate" in full_text
+        or "capital market" in full_text
+        or "geopolitical" in full_text
+        or "macroeconomic" in full_text
+    ):
+        add_unique_risk(
+            risk_items,
+            True,
+            "Tarifeler, enflasyon, faiz oranları, sermaye piyasası oynaklığı ve jeopolitik gelişmeler operasyonel maliyetleri ve finansal sonuçları olumsuz etkileyebilir.",
+        )
+
+    return risk_items
+
+
 def generate_source_based_answer(
     query: str,
     retrieved_chunks: List[Dict[str, Any]],
@@ -181,85 +440,7 @@ def generate_source_based_answer(
     for index, chunk in enumerate(retrieved_chunks, start=1):
         used_sources.append(f"Kaynak {index}")
 
-    risk_items = []
-
-    if (
-        "artificial intelligence" in full_text
-        or "modern ai" in full_text
-        or "accelerated computing" in full_text
-        or "data center" in full_text
-        or "datacenter" in full_text
-        or "cloud" in full_text
-        or "gpu" in full_text
-        or "blackwell" in full_text
-        or "technology" in full_text
-    ):
-        risk_items.append(
-            "Teknoloji dönüşümü, yapay zeka, bulut veya veri merkezi ölçeğindeki büyüme; yüksek altyapı ihtiyacı, hızlı teknoloji değişimi ve müşteri gereksinimlerindeki dönüşüm nedeniyle operasyonel baskı oluşturabilir."
-        )
-
-    if (
-        "privacy" in full_text
-        or "security laws" in full_text
-        or "data privacy" in full_text
-        or "regulatory" in full_text
-        or "regulation" in full_text
-        or "legal proceedings" in full_text
-        or "litigation" in full_text
-    ):
-        risk_items.append(
-            "Veri gizliliği, güvenlik yasaları, regülasyonlar ve yasal süreçler itibar, ürün tasarımı, müşteri ilişkileri ve faaliyet sonuçları üzerinde olumsuz etki yaratabilir."
-        )
-
-    if (
-        "supply" in full_text
-        or "suppliers" in full_text
-        or "purchase obligations" in full_text
-        or "non-cancellable" in full_text
-        or "non-returnable" in full_text
-        or "demand" in full_text
-        or "gross margins" in full_text
-        or "inventory" in full_text
-    ):
-        risk_items.append(
-            "Tedarik zinciri sorunları, satın alma taahhütleri, stok yönetimi ve arz-talep dengesindeki sapmalar maliyetleri, gelir zamanlamasını ve kâr marjlarını olumsuz etkileyebilir."
-        )
-
-    if (
-        "china" in full_text
-        or "export controls" in full_text
-        or "restrictions" in full_text
-        or "chinese government" in full_text
-        or "international" in full_text
-        or "foreign" in full_text
-    ):
-        risk_items.append(
-            "Ülke bazlı kısıtlamalar, ihracat kontrolleri ve uluslararası düzenleyici baskılar gelirleri, rekabet gücünü ve uluslararası satışları baskılayabilir."
-        )
-
-    if (
-        "competition" in full_text
-        or "competitors" in full_text
-        or "competitive" in full_text
-        or "market share" in full_text
-    ):
-        risk_items.append(
-            "Rekabet baskısı, alternatif teknolojiler ve pazar payı kaybı riski şirketin büyüme beklentilerini ve finansal performansını olumsuz etkileyebilir."
-        )
-
-    if (
-        "tariffs" in full_text
-        or "inflation" in full_text
-        or "interest rate" in full_text
-        or "capital market" in full_text
-        or "geopolitical" in full_text
-        or "global supply chain" in full_text
-        or "guarantees" in full_text
-        or "macroeconomic" in full_text
-    ):
-        risk_items.append(
-            "Tarifeler, enflasyon, faiz oranları, jeopolitik gelişmeler ve makroekonomik koşullar operasyonel maliyetleri ve finansal sonuçları olumsuz etkileyebilir."
-        )
+    risk_items = build_company_specific_risk_items(ticker, full_text)
 
     if not risk_items:
         risk_items.append(
@@ -269,11 +450,23 @@ def generate_source_based_answer(
     selected_risks = risk_items[:4]
     source_text = ", ".join(used_sources[:5])
 
+    company_focus = {
+        "AAPL": "ürün talebi, tedarik zinciri, Çin pazarı, App Store/regülasyon ve rekabet",
+        "MSFT": "yapay zeka, Azure, bulut altyapısı, siber güvenlik, regülasyon ve rekabet",
+        "NVDA": "yapay zeka, veri merkezi talebi, ihracat kontrolleri, Çin pazarı, tedarik ve rekabet",
+        "AMZN": "AWS, lojistik, fulfillment operasyonları, regülasyon, iş gücü maliyetleri ve rekabet",
+        "GOOGL": "yapay zeka, reklam pazarı, veri gizliliği, antitröst süreçleri, bulut ve rekabet",
+    }
+
+    focus_text = company_focus.get(
+        ticker,
+        "teknoloji dönüşümü, regülasyonlar, tedarik zinciri, rekabet ve operasyonel riskler",
+    )
+
     lines = [
         (
             f"1. Kısa cevap: {ticker} - {company_name} için bulunan SEC 10-K kaynaklarında "
-            f"teknoloji dönüşümü, regülasyonlar, tedarik zinciri, rekabet ve makroekonomik koşullarla "
-            f"bağlantılı riskler öne çıkıyor."
+            f"{focus_text} başlıklarıyla bağlantılı riskler öne çıkıyor."
         ),
         "",
         "2. Öne çıkan riskler:",
@@ -450,7 +643,7 @@ def answer_question(
 
 
 def answer_all_companies(
-    query: str,
+    query: Optional[str] = None,
     top_k: int = 5,
     use_foundry_local: bool = True,
 ) -> List[Dict[str, Any]]:
@@ -464,12 +657,15 @@ def answer_all_companies(
             manager, model, client = prepare_foundry_local(DEFAULT_MODEL_ALIAS)
 
         for ticker in SUPPORTED_COMPANIES:
+            ticker_query = query if query else get_default_query(ticker)
+
             print("\n" + "=" * 80)
             print(f"{ticker} analiz ediliyor...")
             print("=" * 80)
+            print(f"Sorgu: {ticker_query}")
 
             result = answer_question(
-                query=query,
+                query=ticker_query,
                 ticker=ticker,
                 top_k=top_k,
                 use_foundry_local=use_foundry_local,
@@ -525,19 +721,19 @@ def print_multiple_rag_results(results: List[Dict[str, Any]]) -> None:
 
 def get_default_query(ticker: Optional[str]) -> str:
     if ticker == "AAPL":
-        return "Apple son 10-K raporunda teknoloji, tedarik zinciri, rekabet ve düzenleyici risklerle ilgili hangi konular öne çıkıyor?"
+        return "Apple son 10-K raporunda teknoloji, tedarik zinciri, rekabet, Çin pazarı ve düzenleyici risklerle ilgili hangi konular öne çıkıyor?"
 
     if ticker == "MSFT":
-        return "Microsoft son 10-K raporunda yapay zeka, bulut, veri merkezi ve düzenleyici risklerle ilgili hangi konular öne çıkıyor?"
+        return "Microsoft son 10-K raporunda yapay zeka, bulut, veri merkezi, siber güvenlik ve düzenleyici risklerle ilgili hangi konular öne çıkıyor?"
 
     if ticker == "NVDA":
-        return "NVIDIA son 10-K raporunda yapay zeka, veri merkezi büyümesi ve düzenleyici risklerle ilgili hangi konular öne çıkıyor?"
+        return "NVIDIA son 10-K raporunda yapay zeka, veri merkezi büyümesi, ihracat kontrolleri, Çin pazarı ve tedarik riskleriyle ilgili hangi konular öne çıkıyor?"
 
     if ticker == "AMZN":
-        return "Amazon son 10-K raporunda bulut, lojistik, regülasyon ve operasyonel risklerle ilgili hangi konular öne çıkıyor?"
+        return "Amazon son 10-K raporunda AWS, lojistik, operasyonel maliyetler, regülasyon ve rekabet riskleriyle ilgili hangi konular öne çıkıyor?"
 
     if ticker == "GOOGL":
-        return "Alphabet son 10-K raporunda yapay zeka, reklam pazarı, veri gizliliği ve düzenleyici risklerle ilgili hangi konular öne çıkıyor?"
+        return "Alphabet son 10-K raporunda yapay zeka, reklam pazarı, veri gizliliği, antitröst ve düzenleyici risklerle ilgili hangi konular öne çıkıyor?"
 
     return "AAPL, MSFT, NVDA, AMZN ve GOOGL şirketlerinin son 10-K raporlarında teknoloji, regülasyon, tedarik zinciri, rekabet ve operasyonel riskler açısından hangi konular öne çıkıyor?"
 
@@ -576,8 +772,10 @@ def main() -> None:
     query = user_query if user_query else default_query
 
     if ticker is None:
+        custom_query = user_query if user_query else None
+
         results = answer_all_companies(
-            query=query,
+            query=custom_query,
             top_k=5,
             use_foundry_local=True,
         )
