@@ -48,3 +48,10 @@ data/database/*.db
 data/database/*.sqlite
 data/database/*.sqlite3
 !data/database/.gitkeep
+
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
