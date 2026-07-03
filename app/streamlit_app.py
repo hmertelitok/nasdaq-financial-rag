@@ -18,6 +18,8 @@ from rag_assistant import (
     get_default_query,
 )
 
+from db_manager import initialize_database, save_rag_result
+
 
 st.set_page_config(
     page_title="NASDAQ Financial RAG Assistant",
@@ -77,6 +79,12 @@ def apply_custom_style() -> None:
     )
 
 
+@st.cache_resource
+def setup_database() -> bool:
+    initialize_database()
+    return True
+
+
 def initialize_session_state() -> None:
     if "last_result" not in st.session_state:
         st.session_state.last_result = None
@@ -89,6 +97,9 @@ def initialize_session_state() -> None:
 
     if "last_company" not in st.session_state:
         st.session_state.last_company = None
+
+    if "last_saved_query_ids" not in st.session_state:
+        st.session_state.last_saved_query_ids = []
 
 
 def render_header() -> None:
@@ -139,6 +150,7 @@ def render_sidebar() -> Dict[str, Any]:
     st.sidebar.markdown("- Retrieval: Semantic Hybrid Rerank")
     st.sidebar.markdown("- LLM: Foundry Local / Qwen2.5-7B")
     st.sidebar.markdown("- Veri: SEC 10-K Reports")
+    st.sidebar.markdown("- Veritabanı: SQLite")
     st.sidebar.markdown("- Dil: Türkçe")
 
     st.sidebar.divider()
@@ -293,6 +305,25 @@ def reset_previous_results() -> None:
     st.session_state.last_results = None
     st.session_state.last_mode = None
     st.session_state.last_company = None
+    st.session_state.last_saved_query_ids = []
+
+
+def save_single_result_to_database(
+    query_text: str,
+    result: Dict[str, Any],
+    ticker: Optional[str],
+    top_k: int,
+    use_foundry_local: bool,
+) -> int:
+    query_id = save_rag_result(
+        query_text=query_text,
+        result=result,
+        ticker=ticker,
+        top_k=top_k,
+        use_foundry_local=use_foundry_local,
+    )
+
+    return query_id
 
 
 def run_analysis(
@@ -304,6 +335,8 @@ def run_analysis(
 ) -> None:
     reset_previous_results()
 
+    saved_query_ids = []
+
     if selected_company == "ALL":
         custom_query = None if query.strip() == default_query else query.strip()
 
@@ -313,9 +346,28 @@ def run_analysis(
             use_foundry_local=use_foundry_local,
         )
 
+        for result in results:
+            sources = result.get("sources", [])
+
+            if sources:
+                ticker = sources[0].get("ticker")
+            else:
+                ticker = None
+
+            query_id = save_single_result_to_database(
+                query_text=result.get("query", query.strip()),
+                result=result,
+                ticker=ticker,
+                top_k=top_k,
+                use_foundry_local=use_foundry_local,
+            )
+
+            saved_query_ids.append(query_id)
+
         st.session_state.last_results = results
         st.session_state.last_mode = "ALL"
         st.session_state.last_company = selected_company
+        st.session_state.last_saved_query_ids = saved_query_ids
         return
 
     result = answer_question(
@@ -325,12 +377,44 @@ def run_analysis(
         use_foundry_local=use_foundry_local,
     )
 
+    query_id = save_single_result_to_database(
+        query_text=query.strip(),
+        result=result,
+        ticker=selected_company,
+        top_k=top_k,
+        use_foundry_local=use_foundry_local,
+    )
+
+    saved_query_ids.append(query_id)
+
     st.session_state.last_result = result
     st.session_state.last_mode = "SINGLE"
     st.session_state.last_company = selected_company
+    st.session_state.last_saved_query_ids = saved_query_ids
+
+
+def render_database_save_info() -> None:
+    saved_query_ids = st.session_state.get("last_saved_query_ids", [])
+
+    if not saved_query_ids:
+        return
+
+    if len(saved_query_ids) == 1:
+        st.success(
+            f"Analiz sonucu SQLite veritabanına kaydedildi. Query ID: {saved_query_ids[0]}"
+        )
+        return
+
+    query_ids_text = ", ".join(str(query_id) for query_id in saved_query_ids)
+
+    st.success(
+        f"Analiz sonuçları SQLite veritabanına kaydedildi. Query ID'ler: {query_ids_text}"
+    )
 
 
 def render_saved_results() -> None:
+    render_database_save_info()
+
     if st.session_state.last_mode == "ALL" and st.session_state.last_results:
         render_all_company_results(st.session_state.last_results)
         return
@@ -345,6 +429,7 @@ def render_saved_results() -> None:
 def main() -> None:
     apply_custom_style()
     initialize_session_state()
+    setup_database()
     render_header()
 
     settings = render_sidebar()

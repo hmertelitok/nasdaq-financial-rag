@@ -44,3 +44,7 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite3
+data/database/*.db
+data/database/*.sqlite
+data/database/*.sqlite3
+!data/database/.gitkeep
