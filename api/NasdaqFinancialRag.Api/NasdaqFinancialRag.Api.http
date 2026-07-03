@@ -1,0 +1,40 @@
+@NasdaqFinancialRag.Api_HostAddress = http://localhost:5094
+
+### Health check
+GET {{NasdaqFinancialRag.Api_HostAddress}}/api/health
+Accept: application/json
+
+
+### API root information
+GET {{NasdaqFinancialRag.Api_HostAddress}}/
+Accept: application/json
+
+
+### Companies
+GET {{NasdaqFinancialRag.Api_HostAddress}}/api/companies
+Accept: application/json
+
+
+### Recent RAG queries
+GET {{NasdaqFinancialRag.Api_HostAddress}}/api/queries
+Accept: application/json
+
+
+### Recent RAG queries with limit
+GET {{NasdaqFinancialRag.Api_HostAddress}}/api/queries?limit=5
+Accept: application/json
+
+
+### Query detail
+GET {{NasdaqFinancialRag.Api_HostAddress}}/api/queries/1
+Accept: application/json
+
+
+### Query sources
+GET {{NasdaqFinancialRag.Api_HostAddress}}/api/queries/1/sources
+Accept: application/json
+
+
+### Summary statistics
+GET {{NasdaqFinancialRag.Api_HostAddress}}/api/stats/summary
+Accept: application/json
