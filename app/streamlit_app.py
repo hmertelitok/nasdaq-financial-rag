@@ -2,7 +2,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
 import streamlit as st
 
 
@@ -66,12 +65,6 @@ def apply_custom_style() -> None:
             color: #9ca3af;
             font-size: 0.9rem;
             padding-top: 0.55rem;
-        }
-
-        .market-note {
-            color: #9ca3af;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
         }
 
         div[data-testid="stMetricValue"] {
@@ -212,10 +205,15 @@ def format_percent(value: Any) -> str:
         return "N/A"
 
 
-def format_price_delta(change_value: Any, change_percent: Any, currency: str = "USD") -> str:
+def format_price_delta(
+    change_value: Any,
+    change_percent: Any,
+    currency: str = "USD",
+) -> str:
     try:
         change_float = float(change_value)
         percent_float = float(change_percent)
+
         return f"{change_float:+.2f} {currency} ({percent_float:+.2f}%)"
     except (TypeError, ValueError):
         return "N/A"
@@ -258,7 +256,11 @@ def render_market_snapshot(ticker: str) -> None:
         st.metric(
             label="Daily Change",
             value=format_percent(daily_change_percent),
-            delta=format_price_delta(daily_change, daily_change_percent, currency),
+            delta=format_price_delta(
+                daily_change,
+                daily_change_percent,
+                currency,
+            ),
         )
 
     with col4:
@@ -267,23 +269,9 @@ def render_market_snapshot(ticker: str) -> None:
             value=snapshot.get("price_date", "N/A"),
         )
 
-    history = snapshot.get("history", [])
-
-    if history:
-        chart_data = pd.DataFrame(history)
-
-        if not chart_data.empty and {"date", "close"}.issubset(chart_data.columns):
-            chart_data["date"] = pd.to_datetime(chart_data["date"])
-            chart_data = chart_data.set_index("date")
-            st.line_chart(chart_data["close"])
-
-    st.markdown(
-        """
-        <div class="market-note">
-        Piyasa verisi yalnızca bağlamsal gösterim amaçlıdır. RAG cevabı SEC 10-K kaynaklarına dayanır ve yatırım tavsiyesi değildir.
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.caption(
+        "Piyasa verisi yalnızca bağlamsal gösterim amaçlıdır. "
+        "RAG cevabı SEC 10-K kaynaklarına dayanır ve yatırım tavsiyesi değildir."
     )
 
 
@@ -550,8 +538,9 @@ def main() -> None:
     ticker_for_default = None if selected_company == "ALL" else selected_company
     default_query = get_default_query(ticker_for_default)
 
-    render_market_snapshot(selected_company)
-    st.divider()
+    if selected_company != "ALL":
+        render_market_snapshot(selected_company)
+        st.divider()
 
     st.markdown("### Soru")
 
