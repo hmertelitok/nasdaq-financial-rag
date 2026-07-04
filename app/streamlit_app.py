@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
 import streamlit as st
 
 
@@ -19,6 +20,7 @@ from rag_assistant import (
 )
 
 from db_manager import initialize_database, save_rag_result
+from market_data import get_market_snapshot
 
 
 st.set_page_config(
@@ -66,6 +68,12 @@ def apply_custom_style() -> None:
             padding-top: 0.55rem;
         }
 
+        .market-note {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
         div[data-testid="stMetricValue"] {
             font-size: 1.45rem;
         }
@@ -83,6 +91,11 @@ def apply_custom_style() -> None:
 def setup_database() -> bool:
     initialize_database()
     return True
+
+
+@st.cache_data(ttl=900)
+def load_market_snapshot(ticker: str) -> Dict[str, Any]:
+    return get_market_snapshot(ticker)
 
 
 def initialize_session_state() -> None:
@@ -150,6 +163,7 @@ def render_sidebar() -> Dict[str, Any]:
     st.sidebar.markdown("- Retrieval: Semantic Hybrid Rerank")
     st.sidebar.markdown("- LLM: Foundry Local / Qwen2.5-7B")
     st.sidebar.markdown("- Veri: SEC 10-K Reports")
+    st.sidebar.markdown("- Market Data: yfinance")
     st.sidebar.markdown("- Veritabanı: SQLite")
     st.sidebar.markdown("- Dil: Türkçe")
 
@@ -176,6 +190,101 @@ def get_company_display_name(ticker: str) -> str:
         return "Tüm şirketler"
 
     return f"{ticker} - {SUPPORTED_COMPANIES.get(ticker, ticker)}"
+
+
+def format_money(value: Any, currency: str = "USD") -> str:
+    if value is None:
+        return "N/A"
+
+    try:
+        return f"{float(value):,.2f} {currency}"
+    except (TypeError, ValueError):
+        return "N/A"
+
+
+def format_percent(value: Any) -> str:
+    if value is None:
+        return "N/A"
+
+    try:
+        return f"{float(value):+.2f}%"
+    except (TypeError, ValueError):
+        return "N/A"
+
+
+def format_price_delta(change_value: Any, change_percent: Any, currency: str = "USD") -> str:
+    try:
+        change_float = float(change_value)
+        percent_float = float(change_percent)
+        return f"{change_float:+.2f} {currency} ({percent_float:+.2f}%)"
+    except (TypeError, ValueError):
+        return "N/A"
+
+
+def render_market_snapshot(ticker: str) -> None:
+    st.markdown("### Market Snapshot")
+
+    if ticker == "ALL":
+        st.info("Market Snapshot tek şirket seçildiğinde gösterilir.")
+        return
+
+    snapshot = load_market_snapshot(ticker)
+
+    if not snapshot.get("ok"):
+        st.warning(
+            f"{ticker} için piyasa verisi alınamadı: {snapshot.get('error')}"
+        )
+        return
+
+    currency = snapshot.get("currency", "USD")
+    daily_change = snapshot.get("daily_change")
+    daily_change_percent = snapshot.get("daily_change_percent")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric(
+            label="Ticker",
+            value=snapshot.get("ticker", ticker),
+        )
+
+    with col2:
+        st.metric(
+            label="Last Close",
+            value=format_money(snapshot.get("last_close"), currency),
+        )
+
+    with col3:
+        st.metric(
+            label="Daily Change",
+            value=format_percent(daily_change_percent),
+            delta=format_price_delta(daily_change, daily_change_percent, currency),
+        )
+
+    with col4:
+        st.metric(
+            label="Price Date",
+            value=snapshot.get("price_date", "N/A"),
+        )
+
+    history = snapshot.get("history", [])
+
+    if history:
+        chart_data = pd.DataFrame(history)
+
+        if not chart_data.empty and {"date", "close"}.issubset(chart_data.columns):
+            chart_data["date"] = pd.to_datetime(chart_data["date"])
+            chart_data = chart_data.set_index("date")
+            st.line_chart(chart_data["close"])
+
+    st.markdown(
+        """
+        <div class="market-note">
+        Piyasa verisi yalnızca bağlamsal gösterim amaçlıdır. RAG cevabı SEC 10-K kaynaklarına dayanır ve yatırım tavsiyesi değildir.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def calculate_result_metrics(result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -440,6 +549,9 @@ def main() -> None:
 
     ticker_for_default = None if selected_company == "ALL" else selected_company
     default_query = get_default_query(ticker_for_default)
+
+    render_market_snapshot(selected_company)
+    st.divider()
 
     st.markdown("### Soru")
 
