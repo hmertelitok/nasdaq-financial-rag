@@ -57,6 +57,37 @@ def apply_custom_style() -> None:
             padding-top: 0.55rem;
         }
 
+        .coverage-card {
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 0.95rem;
+            background-color: #161b22;
+            min-height: 125px;
+        }
+
+        .coverage-ticker {
+            font-size: 1.45rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+        }
+
+        .coverage-company {
+            color: #c9d1d9;
+            font-size: 0.92rem;
+            min-height: 38px;
+            margin-bottom: 0.6rem;
+        }
+
+        .coverage-tag {
+            display: inline-block;
+            border: 1px solid #334155;
+            border-radius: 999px;
+            padding: 0.18rem 0.55rem;
+            color: #93c5fd;
+            font-size: 0.78rem;
+            background-color: #0f172a;
+        }
+
         div[data-testid="stMetricValue"] {
             font-size: 1.45rem;
         }
@@ -207,6 +238,36 @@ def format_price_delta(
         return "N/A"
 
 
+def render_company_coverage() -> None:
+    st.markdown("### İncelenen Şirketler")
+    st.caption(
+        "Sistem, seçili NASDAQ şirketlerinin SEC 10-K raporlarını kaynak alarak finansal risk ve faaliyet analizi üretir."
+    )
+
+    company_cards = [
+        ("AAPL", "Apple Inc."),
+        ("MSFT", "Microsoft Corporation"),
+        ("NVDA", "NVIDIA Corporation"),
+        ("AMZN", "Amazon.com, Inc."),
+        ("GOOGL", "Alphabet Inc."),
+    ]
+
+    columns = st.columns(len(company_cards))
+
+    for column, (ticker, company_name) in zip(columns, company_cards):
+        with column:
+            st.markdown(
+                f"""
+                <div class="coverage-card">
+                    <div class="coverage-ticker">{ticker}</div>
+                    <div class="coverage-company">{company_name}</div>
+                    <div class="coverage-tag">SEC 10-K</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+
 def render_market_snapshot(ticker: str) -> None:
     st.markdown("### Market Snapshot")
 
@@ -257,7 +318,8 @@ def render_market_snapshot(ticker: str) -> None:
         "Piyasa verileri yalnızca bağlamsal bilgi sağlamak amacıyla sunulur. "
         "Üretilen yanıtlar SEC 10-K raporlarına dayalıdır ve yatırım tavsiyesi niteliği taşımaz."
     )
-    
+
+
 def calculate_result_metrics(result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     sources = result.get("sources", [])
 
@@ -471,6 +533,8 @@ def run_analysis(
     st.session_state.last_mode = "SINGLE"
     st.session_state.last_company = selected_company
     st.session_state.last_saved_query_ids = saved_query_ids
+
+
 def render_database_save_info() -> None:
     saved_query_ids = st.session_state.get("last_saved_query_ids", [])
 
@@ -519,7 +583,10 @@ def main() -> None:
     ticker_for_default = None if selected_company == "ALL" else selected_company
     default_query = get_default_query(ticker_for_default)
 
-    if selected_company != "ALL":
+    if selected_company == "ALL":
+        render_company_coverage()
+        st.divider()
+    else:
         render_market_snapshot(selected_company)
         st.divider()
 
