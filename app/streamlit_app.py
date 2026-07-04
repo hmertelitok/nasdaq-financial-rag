@@ -51,16 +51,6 @@ def apply_custom_style() -> None:
             margin-bottom: 1.25rem;
         }
 
-        .disclaimer {
-            border: 1px solid #5f4b1b;
-            border-radius: 12px;
-            padding: 0.9rem;
-            background-color: #1f1a0d;
-            color: #facc15;
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
         .small-muted {
             color: #9ca3af;
             font-size: 0.9rem;
@@ -162,14 +152,12 @@ def render_sidebar() -> Dict[str, Any]:
 
     st.sidebar.divider()
 
-    st.sidebar.markdown(
-        """
-        <div class="disclaimer">
-        Bu uygulama yatırım tavsiyesi vermez. Yalnızca SEC 10-K raporlarına dayalı araştırma amaçlı özetleme yapar.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    with st.sidebar.expander("Yasal uyarı", expanded=False):
+        st.caption(
+            "Bu uygulama yatırım tavsiyesi sunmaz. "
+            "Üretilen yanıtlar yalnızca SEC 10-K raporlarına dayalı araştırma amaçlıdır. "
+            "Piyasa verileri bağlamsal bilgi sağlamak için gösterilir."
+        )
 
     return {
         "selected_company": selected_company,
@@ -222,10 +210,6 @@ def format_price_delta(
 def render_market_snapshot(ticker: str) -> None:
     st.markdown("### Market Snapshot")
 
-    if ticker == "ALL":
-        st.info("Market Snapshot tek şirket seçildiğinde gösterilir.")
-        return
-
     snapshot = load_market_snapshot(ticker)
 
     if not snapshot.get("ok"):
@@ -270,11 +254,10 @@ def render_market_snapshot(ticker: str) -> None:
         )
 
     st.caption(
-        "Piyasa verisi yalnızca bağlamsal gösterim amaçlıdır. "
-        "RAG cevabı SEC 10-K kaynaklarına dayanır ve yatırım tavsiyesi değildir."
+        "Piyasa verileri yalnızca bağlamsal bilgi sağlamak amacıyla sunulur. "
+        "Üretilen yanıtlar SEC 10-K raporlarına dayalıdır ve yatırım tavsiyesi niteliği taşımaz."
     )
-
-
+    
 def calculate_result_metrics(result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     sources = result.get("sources", [])
 
@@ -488,8 +471,6 @@ def run_analysis(
     st.session_state.last_mode = "SINGLE"
     st.session_state.last_company = selected_company
     st.session_state.last_saved_query_ids = saved_query_ids
-
-
 def render_database_save_info() -> None:
     saved_query_ids = st.session_state.get("last_saved_query_ids", [])
 
@@ -564,9 +545,9 @@ def main() -> None:
         st.markdown(
             f"""
             <div class="small-muted">
-            Seçilen kapsam: <b>{get_company_display_name(selected_company)}</b> |
-            Top-K: <b>{top_k}</b> |
-            Foundry Local: <b>{"Açık" if use_foundry_local else "Kapalı"}</b>
+            Analiz kapsamı: <b>{get_company_display_name(selected_company)}</b> ·
+            Kullanılan kaynak: <b>{top_k}</b> ·
+            Yanıt motoru: <b>{"Foundry Local" if use_foundry_local else "Kaynak tabanlı özetleme"}</b>
             </div>
             """,
             unsafe_allow_html=True,
@@ -579,7 +560,7 @@ def main() -> None:
 
         try:
             with st.spinner(
-                "RAG analizi çalışıyor. Foundry Local modeli yükleniyorsa bu işlem biraz sürebilir..."
+                "Analiz hazırlanıyor. Foundry Local modeli yükleniyorsa bu işlem biraz sürebilir..."
             ):
                 run_analysis(
                     selected_company=selected_company,
