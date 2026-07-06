@@ -11,3 +11,4 @@ sentence-transformers
 torch
 torchvision
 yfinance
+psycopg2-binary
