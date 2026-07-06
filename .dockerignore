@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+
+# Python environments
+.venv/
+.venv-*/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local environment files
+.env
+.env.local
+
+# Local data and generated artifacts
+data/raw/*
+data/processed/*
+data/chunks/*
+data/embeddings/*
+data/evaluation/*.csv
+data/evaluation/*.jsonl
+data/database/*.db
+data/database/*.sqlite
+data/database/*.sqlite3
+*.pkl
+
+# Keep folder placeholders
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/chunks/.gitkeep
+!data/embeddings/.gitkeep
+!data/evaluation/.gitkeep
+!data/database/.gitkeep
+
+# .NET build outputs
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
