@@ -102,3 +102,9 @@ Microsoft son 10-K raporunda bulut hizmetleri ve rekabet hakkında ne söylüyor
 ## Yasal Uyarı
 
 Bu proje yatırım tavsiyesi vermez. Yalnızca SEC raporları üzerinden araştırma amaçlı özetleme ve doküman temelli bilgi sunumu yapar.
+
+## PostgreSQL + pgvector API Documentation
+
+Additional notes about the PostgreSQL, pgvector and ASP.NET Core API integration are available in:
+
+docs/postgres_pgvector_api.md
