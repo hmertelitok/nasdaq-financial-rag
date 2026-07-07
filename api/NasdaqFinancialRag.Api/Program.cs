@@ -14,6 +14,7 @@ builder.Services.Configure<PostgresOptions>(
 builder.Services.AddSingleton<PostgresConnectionFactory>();
 builder.Services.AddScoped<CompanyRepository>();
 builder.Services.AddScoped<PostgresStatsRepository>();
+builder.Services.AddScoped<PostgresFilingRepository>();
 
 var app = builder.Build();
 
@@ -55,6 +56,7 @@ app.MapGet("/", () =>
             "GET /api/companies",
             "GET /api/postgres/companies",
             "GET /api/postgres/stats/summary",
+            "GET /api/postgres/filings",
             "GET /api/queries",
             "GET /api/queries/{id}",
             "GET /api/queries/{id}/sources",
@@ -72,6 +74,7 @@ app.MapGet("/api/health", () =>
         sqliteDatabasePath = databasePath,
         postgresCompaniesEndpoint = "/api/postgres/companies",
         postgresStatsEndpoint = "/api/postgres/stats/summary",
+        postgresFilingsEndpoint = "/api/postgres/filings",
         checkedAt = DateTime.UtcNow
     });
 });
@@ -145,6 +148,31 @@ app.MapGet(
     }
 )
 .WithName("GetPostgresStatsSummary")
+.WithTags("PostgreSQL");
+
+app.MapGet(
+    "/api/postgres/filings",
+    async (
+        PostgresFilingRepository filingRepository,
+        string? ticker,
+        string? filingType,
+        int? limit,
+        CancellationToken cancellationToken
+    ) =>
+    {
+        var safeLimit = Math.Clamp(limit ?? 50, 1, 200);
+
+        var filings = await filingRepository.GetFilingsAsync(
+            ticker: ticker,
+            filingType: filingType,
+            limit: safeLimit,
+            cancellationToken: cancellationToken
+        );
+
+        return Results.Ok(filings);
+    }
+)
+.WithName("GetPostgresFilings")
 .WithTags("PostgreSQL");
 
 app.MapGet("/api/queries", (int? limit) =>
