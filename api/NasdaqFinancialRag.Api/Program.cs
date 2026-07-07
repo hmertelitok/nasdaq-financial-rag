@@ -13,6 +13,7 @@ builder.Services.Configure<PostgresOptions>(
 
 builder.Services.AddSingleton<PostgresConnectionFactory>();
 builder.Services.AddScoped<CompanyRepository>();
+builder.Services.AddScoped<PostgresStatsRepository>();
 
 var app = builder.Build();
 
@@ -53,6 +54,7 @@ app.MapGet("/", () =>
             "GET /api/health",
             "GET /api/companies",
             "GET /api/postgres/companies",
+            "GET /api/postgres/stats/summary",
             "GET /api/queries",
             "GET /api/queries/{id}",
             "GET /api/queries/{id}/sources",
@@ -68,7 +70,8 @@ app.MapGet("/api/health", () =>
         status = "healthy",
         sqliteDatabaseExists = File.Exists(databasePath),
         sqliteDatabasePath = databasePath,
-        postgresEndpoint = "/api/postgres/companies",
+        postgresCompaniesEndpoint = "/api/postgres/companies",
+        postgresStatsEndpoint = "/api/postgres/stats/summary",
         checkedAt = DateTime.UtcNow
     });
 });
@@ -127,6 +130,21 @@ app.MapGet(
     }
 )
 .WithName("GetPostgresCompanies")
+.WithTags("PostgreSQL");
+
+app.MapGet(
+    "/api/postgres/stats/summary",
+    async (
+        PostgresStatsRepository statsRepository,
+        CancellationToken cancellationToken
+    ) =>
+    {
+        var summary = await statsRepository.GetSummaryAsync(cancellationToken);
+
+        return Results.Ok(summary);
+    }
+)
+.WithName("GetPostgresStatsSummary")
 .WithTags("PostgreSQL");
 
 app.MapGet("/api/queries", (int? limit) =>
