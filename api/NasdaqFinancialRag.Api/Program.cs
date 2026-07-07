@@ -1,8 +1,18 @@
+using NasdaqFinancialRag.Api.Data;
+using NasdaqFinancialRag.Api.Options;
+using NasdaqFinancialRag.Api.Repositories;
 using Microsoft.Data.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+
+builder.Services.Configure<PostgresOptions>(
+    builder.Configuration.GetSection(PostgresOptions.SectionName)
+);
+
+builder.Services.AddSingleton<PostgresConnectionFactory>();
+builder.Services.AddScoped<CompanyRepository>();
 
 var app = builder.Build();
 
@@ -42,6 +52,7 @@ app.MapGet("/", () =>
         {
             "GET /api/health",
             "GET /api/companies",
+            "GET /api/postgres/companies",
             "GET /api/queries",
             "GET /api/queries/{id}",
             "GET /api/queries/{id}/sources",
@@ -55,8 +66,9 @@ app.MapGet("/api/health", () =>
     return Results.Ok(new
     {
         status = "healthy",
-        databaseExists = File.Exists(databasePath),
-        databasePath,
+        sqliteDatabaseExists = File.Exists(databasePath),
+        sqliteDatabasePath = databasePath,
+        postgresEndpoint = "/api/postgres/companies",
         checkedAt = DateTime.UtcNow
     });
 });
@@ -101,6 +113,21 @@ app.MapGet("/api/companies", () =>
 
     return Results.Ok(companies);
 });
+
+app.MapGet(
+    "/api/postgres/companies",
+    async (
+        CompanyRepository companyRepository,
+        CancellationToken cancellationToken
+    ) =>
+    {
+        var companies = await companyRepository.GetCompaniesAsync(cancellationToken);
+
+        return Results.Ok(companies);
+    }
+)
+.WithName("GetPostgresCompanies")
+.WithTags("PostgreSQL");
 
 app.MapGet("/api/queries", (int? limit) =>
 {

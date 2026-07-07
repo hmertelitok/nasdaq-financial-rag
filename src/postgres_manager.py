@@ -13,6 +13,35 @@ SCHEMA_PATH = PROJECT_ROOT / "database" / "postgres_schema.sql"
 load_dotenv(PROJECT_ROOT / ".env")
 
 
+SUPPORTED_COMPANIES = [
+    {
+        "ticker": "AAPL",
+        "company_name": "Apple Inc.",
+        "cik": "0000320193",
+    },
+    {
+        "ticker": "MSFT",
+        "company_name": "Microsoft Corporation",
+        "cik": "0000789019",
+    },
+    {
+        "ticker": "NVDA",
+        "company_name": "NVIDIA Corporation",
+        "cik": "0001045810",
+    },
+    {
+        "ticker": "AMZN",
+        "company_name": "Amazon.com, Inc.",
+        "cik": "0001018724",
+    },
+    {
+        "ticker": "GOOGL",
+        "company_name": "Alphabet Inc.",
+        "cik": "0001652044",
+    },
+]
+
+
 def get_postgres_config() -> Dict[str, Any]:
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
@@ -47,6 +76,47 @@ def execute_sql_file(sql_path: Path = SCHEMA_PATH) -> None:
             cursor.execute(sql_script)
 
         connection.commit()
+
+
+def seed_companies() -> None:
+    query = """
+    INSERT INTO companies (ticker, company_name, cik)
+    VALUES (%s, %s, %s)
+    ON CONFLICT (ticker)
+    DO UPDATE SET
+        company_name = EXCLUDED.company_name,
+        cik = EXCLUDED.cik;
+    """
+
+    company_rows = [
+        (
+            company["ticker"],
+            company["company_name"],
+            company["cik"],
+        )
+        for company in SUPPORTED_COMPANIES
+    ]
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.executemany(query, company_rows)
+
+        connection.commit()
+
+
+def get_companies() -> List[Dict[str, Any]]:
+    query = """
+    SELECT ticker, company_name, cik, created_at
+    FROM companies
+    ORDER BY ticker;
+    """
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+    return [dict(row) for row in rows]
 
 
 def check_pgvector_extension() -> Optional[Dict[str, Any]]:
@@ -111,6 +181,16 @@ def print_postgres_status() -> None:
         print("pgvector aktif değil")
 
     print()
+    print("Kayıtlı şirketler")
+
+    for company in get_companies():
+        print(
+            f"- {company['ticker']}: "
+            f"{company['company_name']} "
+            f"(CIK: {company['cik']})"
+        )
+
+    print()
     print("Tablo kayıt sayıları")
 
     for table in get_table_counts():
@@ -119,6 +199,7 @@ def print_postgres_status() -> None:
 
 def main() -> None:
     execute_sql_file()
+    seed_companies()
     print_postgres_status()
 
 
