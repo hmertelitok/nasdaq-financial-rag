@@ -1,4 +1,4 @@
-using NasdaqFinancialRag.Api.Data;
+﻿using NasdaqFinancialRag.Api.Data;
 using NasdaqFinancialRag.Api.Options;
 using NasdaqFinancialRag.Api.Repositories;
 using Microsoft.Data.Sqlite;
@@ -15,6 +15,7 @@ builder.Services.AddSingleton<PostgresConnectionFactory>();
 builder.Services.AddScoped<CompanyRepository>();
 builder.Services.AddScoped<PostgresStatsRepository>();
 builder.Services.AddScoped<PostgresFilingRepository>();
+builder.Services.AddScoped<PostgresChunkRepository>();
 
 var app = builder.Build();
 
@@ -23,7 +24,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Local geliştirme için HTTPS yönlendirmesini kapalı tutuyoruz.
+// Local geliÅŸtirme iÃ§in HTTPS yÃ¶nlendirmesini kapalÄ± tutuyoruz.
 // app.UseHttpsRedirection();
 
 var databasePath = Path.GetFullPath(
@@ -57,6 +58,7 @@ app.MapGet("/", () =>
             "GET /api/postgres/companies",
             "GET /api/postgres/stats/summary",
             "GET /api/postgres/filings",
+            "GET /api/postgres/chunks",
             "GET /api/queries",
             "GET /api/queries/{id}",
             "GET /api/queries/{id}/sources",
@@ -75,6 +77,7 @@ app.MapGet("/api/health", () =>
         postgresCompaniesEndpoint = "/api/postgres/companies",
         postgresStatsEndpoint = "/api/postgres/stats/summary",
         postgresFilingsEndpoint = "/api/postgres/filings",
+        postgresChunksEndpoint = "/api/postgres/chunks",
         checkedAt = DateTime.UtcNow
     });
 });
@@ -175,6 +178,30 @@ app.MapGet(
 .WithName("GetPostgresFilings")
 .WithTags("PostgreSQL");
 
+app.MapGet(
+    "/api/postgres/chunks",
+    async (
+        PostgresChunkRepository chunkRepository,
+        string? ticker,
+        string? section,
+        int? limit,
+        CancellationToken cancellationToken
+    ) =>
+    {
+        var safeLimit = Math.Clamp(limit ?? 50, 1, 200);
+
+        var chunks = await chunkRepository.GetChunksAsync(
+            ticker: ticker,
+            section: section,
+            limit: safeLimit,
+            cancellationToken: cancellationToken
+        );
+
+        return Results.Ok(chunks);
+    }
+)
+.WithName("GetPostgresChunks")
+.WithTags("PostgreSQL");
 app.MapGet("/api/queries", (int? limit) =>
 {
     if (!File.Exists(databasePath))
@@ -576,3 +603,8 @@ record StatsSummaryDto(
     double AverageScore,
     string? LastQueryAt
 );
+
+
+
+
+
