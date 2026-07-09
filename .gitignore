@@ -55,3 +55,5 @@ obj/
 .vs/
 *.user
 *.suo
+# VS Code local settings
+.vscode/
