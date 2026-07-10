@@ -1,6 +1,7 @@
-﻿using NasdaqFinancialRag.Api.Data;
+using NasdaqFinancialRag.Api.Data;
 using NasdaqFinancialRag.Api.Options;
 using NasdaqFinancialRag.Api.Repositories;
+using NasdaqFinancialRag.Api.Services;
 using Microsoft.Data.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,11 +12,39 @@ builder.Services.Configure<PostgresOptions>(
     builder.Configuration.GetSection(PostgresOptions.SectionName)
 );
 
+builder.Services.Configure<PgvectorSearchServiceOptions>(
+    builder.Configuration.GetSection(
+        PgvectorSearchServiceOptions.SectionName
+    )
+);
+
 builder.Services.AddSingleton<PostgresConnectionFactory>();
 builder.Services.AddScoped<CompanyRepository>();
 builder.Services.AddScoped<PostgresStatsRepository>();
 builder.Services.AddScoped<PostgresFilingRepository>();
 builder.Services.AddScoped<PostgresChunkRepository>();
+
+builder.Services.AddHttpClient<PgvectorSearchClient>(
+    (serviceProvider, client) =>
+    {
+        var options = serviceProvider
+            .GetRequiredService<
+                Microsoft.Extensions.Options.IOptions<
+                    PgvectorSearchServiceOptions
+                >
+            >()
+            .Value;
+
+        client.BaseAddress = new Uri(
+            options.BaseUrl.TrimEnd('/') + "/"
+        );
+
+        client.Timeout = TimeSpan.FromSeconds(
+            Math.Clamp(options.TimeoutSeconds, 10, 300)
+        );
+    }
+);
+
 
 var app = builder.Build();
 
@@ -59,6 +88,7 @@ app.MapGet("/", () =>
             "GET /api/postgres/stats/summary",
             "GET /api/postgres/filings",
             "GET /api/postgres/chunks",
+            "GET /api/postgres/search",
             "GET /api/queries",
             "GET /api/queries/{id}",
             "GET /api/queries/{id}/sources",
@@ -78,6 +108,7 @@ app.MapGet("/api/health", () =>
         postgresStatsEndpoint = "/api/postgres/stats/summary",
         postgresFilingsEndpoint = "/api/postgres/filings",
         postgresChunksEndpoint = "/api/postgres/chunks",
+        postgresSearchEndpoint = "/api/postgres/search",
         checkedAt = DateTime.UtcNow
     });
 });
@@ -202,6 +233,63 @@ app.MapGet(
 )
 .WithName("GetPostgresChunks")
 .WithTags("PostgreSQL");
+
+app.MapGet(
+    "/api/postgres/search",
+    async (
+        string query,
+        PgvectorSearchClient searchClient,
+        string? ticker,
+        string? section,
+        int? limit,
+        CancellationToken cancellationToken
+    ) =>
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return Results.BadRequest(new
+            {
+                message = "query parametresi zorunludur."
+            });
+        }
+
+        var safeLimit = Math.Clamp(limit ?? 5, 1, 20);
+
+        try
+        {
+            var searchResult = await searchClient.SearchAsync(
+                query: query,
+                ticker: ticker,
+                section: section,
+                limit: safeLimit,
+                cancellationToken: cancellationToken
+            );
+
+            return Results.Ok(searchResult);
+        }
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            return Results.Problem(
+                title: "Semantic search timeout",
+                detail:
+                    "Python pgvector search servisi zaman a??m?na u?rad?.",
+                statusCode: StatusCodes.Status504GatewayTimeout
+            );
+        }
+        catch (HttpRequestException exception)
+        {
+            return Results.Problem(
+                title: "Python search service unavailable",
+                detail: exception.Message,
+                statusCode: StatusCodes.Status502BadGateway
+            );
+        }
+    }
+)
+.WithName("GetPostgresSemanticSearch")
+.WithTags("PostgreSQL");
+
 app.MapGet("/api/queries", (int? limit) =>
 {
     if (!File.Exists(databasePath))
