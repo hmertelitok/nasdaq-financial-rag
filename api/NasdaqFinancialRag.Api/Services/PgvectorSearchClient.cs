@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.WebUtilities;
 using NasdaqFinancialRag.Api.Models;
@@ -78,6 +78,65 @@ public sealed class PgvectorSearchClient
         return searchResponse
             ?? throw new InvalidOperationException(
                 "Python pgvector search servisi boş yanıt döndürdü."
+            );
+    }
+
+    public async Task<PgvectorAskResponseDto> AskAsync(
+        PgvectorAskRequestDto request,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (string.IsNullOrWhiteSpace(request.Query))
+        {
+            throw new ArgumentException(
+                "RAG sorusu boş olamaz.",
+                nameof(request)
+            );
+        }
+
+        var normalizedRequest = request with
+        {
+            Query = request.Query.Trim(),
+            Ticker = string.IsNullOrWhiteSpace(request.Ticker)
+                ? null
+                : request.Ticker.Trim().ToUpperInvariant(),
+            Section = string.IsNullOrWhiteSpace(request.Section)
+                ? null
+                : request.Section.Trim(),
+            TopK = Math.Clamp(request.TopK, 1, 20),
+            ModelAlias = string.IsNullOrWhiteSpace(request.ModelAlias)
+                ? "qwen2.5-7b"
+                : request.ModelAlias.Trim()
+        };
+
+        using var response = await _httpClient.PostAsJsonAsync(
+            "ask",
+            normalizedRequest,
+            cancellationToken
+        );
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var responseBody = await response.Content.ReadAsStringAsync(
+                cancellationToken
+            );
+
+            throw new HttpRequestException(
+                $"Python RAG cevap servisi başarısız oldu. " +
+                $"Status: {(int)response.StatusCode}. Body: {responseBody}",
+                inner: null,
+                statusCode: response.StatusCode
+            );
+        }
+
+        var askResponse =
+            await response.Content.ReadFromJsonAsync<PgvectorAskResponseDto>(
+                cancellationToken: cancellationToken
+            );
+
+        return askResponse
+            ?? throw new InvalidOperationException(
+                "Python RAG cevap servisi boş yanıt döndürdü."
             );
     }
 }

@@ -1,3 +1,4 @@
+using NasdaqFinancialRag.Api.Models;
 using NasdaqFinancialRag.Api.Data;
 using NasdaqFinancialRag.Api.Options;
 using NasdaqFinancialRag.Api.Repositories;
@@ -53,7 +54,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Local geliÅŸtirme iÃ§in HTTPS yÃ¶nlendirmesini kapalÄ± tutuyoruz.
+// Local geliştirme için HTTPS yönlendirmesini kapalı tutuyoruz.
 // app.UseHttpsRedirection();
 
 var databasePath = Path.GetFullPath(
@@ -89,6 +90,7 @@ app.MapGet("/", () =>
             "GET /api/postgres/filings",
             "GET /api/postgres/chunks",
             "GET /api/postgres/search",
+            "POST /api/rag/ask",
             "GET /api/queries",
             "GET /api/queries/{id}",
             "GET /api/queries/{id}/sources",
@@ -109,6 +111,7 @@ app.MapGet("/api/health", () =>
         postgresFilingsEndpoint = "/api/postgres/filings",
         postgresChunksEndpoint = "/api/postgres/chunks",
         postgresSearchEndpoint = "/api/postgres/search",
+        ragAnswerEndpoint = "/api/rag/ask",
         checkedAt = DateTime.UtcNow
     });
 });
@@ -273,7 +276,7 @@ app.MapGet(
             return Results.Problem(
                 title: "Semantic search timeout",
                 detail:
-                    "Python pgvector search servisi zaman a??m?na u?rad?.",
+                    "Python pgvector search servisi zaman aşımına uğradı.",
                 statusCode: StatusCodes.Status504GatewayTimeout
             );
         }
@@ -289,6 +292,70 @@ app.MapGet(
 )
 .WithName("GetPostgresSemanticSearch")
 .WithTags("PostgreSQL");
+
+
+app.MapPost(
+    "/api/rag/ask",
+    async (
+        PgvectorAskRequestDto request,
+        PgvectorSearchClient searchClient,
+        CancellationToken cancellationToken
+    ) =>
+    {
+        if (string.IsNullOrWhiteSpace(request.Query))
+        {
+            return Results.BadRequest(new
+            {
+                message = "query alanı zorunludur."
+            });
+        }
+
+        var normalizedRequest = request with
+        {
+            Query = request.Query.Trim(),
+            Ticker = string.IsNullOrWhiteSpace(request.Ticker)
+                ? null
+                : request.Ticker.Trim().ToUpperInvariant(),
+            Section = string.IsNullOrWhiteSpace(request.Section)
+                ? null
+                : request.Section.Trim(),
+            TopK = Math.Clamp(request.TopK, 1, 20),
+            ModelAlias = string.IsNullOrWhiteSpace(request.ModelAlias)
+                ? "qwen2.5-7b"
+                : request.ModelAlias.Trim()
+        };
+
+        try
+        {
+            var answerResult = await searchClient.AskAsync(
+                normalizedRequest,
+                cancellationToken
+            );
+
+            return Results.Ok(answerResult);
+        }
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            return Results.Problem(
+                title: "RAG answer timeout",
+                detail:
+                    "Python RAG cevap servisi zaman aşımına uğradı.",
+                statusCode: StatusCodes.Status504GatewayTimeout
+            );
+        }
+        catch (HttpRequestException exception)
+        {
+            return Results.Problem(
+                title: "Python RAG service unavailable",
+                detail: exception.Message,
+                statusCode: StatusCodes.Status502BadGateway
+            );
+        }
+    }
+)
+.WithName("PostRagAnswer")
+.WithTags("RAG");
 
 app.MapGet("/api/queries", (int? limit) =>
 {
