@@ -1,9 +1,10 @@
-﻿import sys
+import sys
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field
 
 
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -11,14 +12,28 @@ CURRENT_DIR = Path(__file__).resolve().parent
 if str(CURRENT_DIR) not in sys.path:
     sys.path.append(str(CURRENT_DIR))
 
+from pgvector_rag_answer import DEFAULT_MODEL_ALIAS, answer_question
 from pgvector_search import EMBEDDING_MODEL_NAME, semantic_search
 
 
 app = FastAPI(
-    title="NASDAQ Financial RAG pgvector Search Service",
-    description="Local semantic search service for PostgreSQL + pgvector document chunks.",
-    version="1.0.0",
+    title="NASDAQ Financial RAG pgvector Service",
+    description=(
+        "PostgreSQL + pgvector semantic search and Foundry Local "
+        "source-grounded answer service."
+    ),
+    version="1.1.0",
 )
+
+
+class AskRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    query: str = Field(min_length=3)
+    ticker: Optional[str] = None
+    section: Optional[str] = None
+    top_k: int = Field(default=5, ge=1, le=20, alias="topK")
+    model_alias: str = Field(default=DEFAULT_MODEL_ALIAS, alias="modelAlias")
 
 
 def to_json_safe(value: Any) -> Any:
@@ -39,8 +54,11 @@ def serialize_result(row: Dict[str, Any]) -> Dict[str, Any]:
 def health() -> Dict[str, Any]:
     return {
         "status": "healthy",
-        "service": "pgvector-search-service",
+        "service": "pgvector-rag-service",
         "embeddingModel": EMBEDDING_MODEL_NAME,
+        "generationModel": DEFAULT_MODEL_ALIAS,
+        "searchEndpoint": "/search",
+        "answerEndpoint": "/ask",
     }
 
 
@@ -68,6 +86,24 @@ def search(
             "resultCount": len(results),
             "results": [serialize_result(result) for result in results],
         }
+
+    except Exception as exception:
+        raise HTTPException(
+            status_code=500,
+            detail=str(exception),
+        ) from exception
+
+
+@app.post("/ask")
+def ask(request: AskRequest) -> Dict[str, Any]:
+    try:
+        return answer_question(
+            query=request.query,
+            ticker=request.ticker,
+            section=request.section,
+            top_k=request.top_k,
+            model_alias=request.model_alias,
+        )
 
     except Exception as exception:
         raise HTTPException(
