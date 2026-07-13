@@ -45,6 +45,9 @@ QUALITY_REPLACEMENTS = {
     "open-source foundation modelleri": "açık kaynak temel modelleri",
     "Open-source foundation modelleri": "Açık kaynak temel modelleri",
     "olumlu yönde etkileyebilir": "olumsuz etkileyebilir",
+    "A W S": "AWS",
+    "P R C": "Çin",
+    "vekârlılığı": "ve kârlılığı",
 }
 
 FORBIDDEN_TERMS = (
@@ -61,6 +64,10 @@ FORBIDDEN_TERMS = (
     "biden",
     "risk var",
     "kısıtlayıcı olabilir",
+    "a w s",
+    "p r c",
+    "vekârlılığı",
+    "telif hakkı ihlallerini koruması",
 )
 
 RISK_CATEGORIES: List[Dict[str, Any]] = [
@@ -322,7 +329,7 @@ def _apply_quality_replacements(text: str) -> str:
     for wrong, correct in QUALITY_REPLACEMENTS.items():
         result = result.replace(wrong, correct)
 
-    result = re.sub(r"(?<=[a-zA-ZçğıöşüÇĞİÖŞÜ])(?=[A-ZÇĞİÖŞÜ])", " ", result)
+    result = re.sub(r"(?<=[a-z??????])(?=[A-Z??????])", " ", result)
     result = re.sub(r"\[Kaynak\s*(\d+)\]", r"[Kaynak \1]", result, flags=re.IGNORECASE)
     result = re.sub(r"[ \t]+", " ", result)
     result = re.sub(r" +\n", "\n", result)
@@ -383,6 +390,22 @@ def _is_low_quality_answer(answer: str) -> bool:
         return True
 
     if len(risk_lines) < 3 or len(risk_lines) > 4:
+        return True
+
+    if any(len(line) > 420 for line in risk_lines):
+        return True
+
+    if re.search(
+        r"\b(?:[A-ZÇĞİÖŞÜ]\s+){2,}[A-ZÇĞİÖŞÜ]\b",
+        answer,
+    ):
+        return True
+
+    if re.search(
+        r"\[Kaynak\d+\]",
+        answer,
+        flags=re.IGNORECASE,
+    ):
         return True
 
     if any("[kaynak " not in line.casefold() for line in risk_lines):
@@ -536,7 +559,7 @@ def _build_deterministic_answer(
         ]
     )
 
-    return "\n".join(lines)
+    return _apply_quality_replacements("\n".join(lines))
 
 
 def prepare_foundry_local(
