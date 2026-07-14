@@ -1,0 +1,6 @@
+﻿ticker,passed,http_status,source_count,risk_item_count,citation_count,likely_controlled_fallback,errors
+AAPL,True,200,5,4,4,True,
+MSFT,True,200,5,4,4,True,
+NVDA,True,200,5,4,4,True,
+AMZN,True,200,5,4,4,True,
+GOOGL,True,200,5,4,4,True,
