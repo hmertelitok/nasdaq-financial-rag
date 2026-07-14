@@ -1,110 +1,264 @@
 # NASDAQ Financial RAG Assistant
 
-Bu proje, Microsoft AI Innovators Summer Internship kapsamında geliştirilen Türkçe arayüzlü bir finansal RAG asistanıdır.
+Microsoft AI Innovators Summer Internship kapsamında geliştirilen, seçili NASDAQ şirketlerinin SEC 10-K raporları üzerinde çalışan Türkçe finansal araştırma asistanıdır.
 
-Proje; seçili NASDAQ şirketlerinin SEC 10-K raporları üzerinde çalışarak kullanıcı sorularına doküman temelli yanıtlar üretmeyi amaçlar. Sistem, kullanıcı sorusuyla en ilgili rapor parçalarını getirir ve cevabın hangi filing, section ve source chunk üzerinden üretildiğini gösterir.
+Sistem; kullanıcı sorusuyla ilgili rapor parçalarını PostgreSQL ve pgvector üzerinden getirir, Microsoft Foundry Local üzerinde çalışan yerel dil modeliyle kaynak temelli yanıt üretir ve cevabın dayandığı filing, section, chunk ve benzerlik skorlarını gösterir.
 
-> Bu proje geliştirme aşamasındadır. Günlük commitlerle adım adım ilerletilmektedir.
+> Proje yatırım tavsiyesi üretmez. SEC raporlarının araştırılması, özetlenmesi ve kaynak temelli analiz edilmesi amacıyla geliştirilmiştir.
 
 ## Proje Amacı
 
-Finansal raporlar uzun, teknik ve manuel olarak incelenmesi zaman alan dokümanlardır. Bu proje, seçili NASDAQ şirketlerinin SEC 10-K raporlarını daha hızlı analiz edebilmek için RAG tabanlı bir araştırma asistanı geliştirmeyi hedefler.
+SEC 10-K raporları uzun, teknik ve manuel olarak incelenmesi zaman alan finansal dokümanlardır.
 
-Amaç, genel bir doküman chatbotu geliştirmek yerine gerçek finansal dokümanlar üzerinde çalışan, cevaplarını ilgili rapor bölümleriyle destekleyen bir yerel RAG uygulaması oluşturmaktır.
+Bu projenin amacı, genel amaçlı bir chatbot geliştirmek yerine:
 
-## Kullanılan Şirketler
+- Gerçek SEC dokümanları üzerinde çalışan
+- Yanıtlarını kaynak parçalarıyla destekleyen
+- Yerel model ve yerel veri altyapısı kullanabilen
+- Python ve ASP.NET Core servislerini birlikte kullanan
+- Yanıt kalitesini otomatik testlerle denetleyen
 
-İlk sürümde aşağıdaki NASDAQ şirketleriyle çalışılması planlanmaktadır:
+bir finansal RAG sistemi oluşturmaktır.
 
-* AAPL — Apple Inc.
-* MSFT — Microsoft Corporation
-* NVDA — NVIDIA Corporation
-* AMZN — Amazon.com, Inc.
-* GOOGL — Alphabet Inc.
+## Desteklenen Şirketler
 
-## Kullanılan Veri Kaynağı
+| Ticker | Şirket |
+|---|---|
+| AAPL | Apple Inc. |
+| MSFT | Microsoft Corporation |
+| NVDA | NVIDIA Corporation |
+| AMZN | Amazon.com, Inc. |
+| GOOGL | Alphabet Inc. |
 
-Projede SEC EDGAR üzerinden alınan 10-K raporları kullanılacaktır.
+## Veri Kaynağı
 
-İlk sürümde her şirket için en güncel 10-K raporu üzerinde çalışılması hedeflenmektedir.
+Projede SEC EDGAR üzerinden alınan 10-K raporları kullanılmaktadır.
+
+Mevcut veri setinde:
+
+- 5 şirket
+- 5 SEC filing
+- 334 doküman parçası
+
+bulunmaktadır.
 
 ## Temel Özellikler
 
-* SEC 10-K raporlarını indirme ve işleme
-* Rapor metinlerini chunk yapısına ayırma
-* Embedding üretimi
-* Vector search ile ilgili doküman parçalarını getirme
-* RAG tabanlı cevap üretimi
-* Türkçe Streamlit dark theme arayüz
-* Cevap altında filing type, section, chunk ve skor bilgisi gösterimi
+- SEC 10-K raporlarını indirme ve işleme
+- Finansal doküman temizleme ve chunking
+- Çok dilli embedding üretimi
+- PostgreSQL ve pgvector üzerinde vektör saklama
+- Semantic search ile ilgili doküman parçalarını getirme
+- Microsoft Foundry Local ile yerel yanıt üretimi
+- Türkçe kaynak temelli RAG cevapları
+- Cevaplarda `[Kaynak N]` biçiminde atıf gösterimi
+- Filing type, section, chunk ve skor bilgisi
+- FastAPI tabanlı dahili AI servisi
+- ASP.NET Core Web API üzerinden dış servis katmanı
+- Otomatik RAG cevap kalite değerlendirmesi
+- JSON ve CSV test raporları
+- Türkçe Streamlit dark theme arayüzü
 
 ## Kullanılan Teknolojiler
 
-* Python
-* Streamlit
-* Microsoft Foundry Local
-* SEC EDGAR
-* RAG
-* Embeddings
-* Vector Search
+### AI ve Veri İşleme
 
-## Sistem Akışı
+- Python
+- Microsoft Foundry Local
+- Qwen2.5-7B
+- `intfloat/multilingual-e5-small`
+- Retrieval-Augmented Generation
+- Semantic Search
+- Embeddings
+
+### Backend
+
+- FastAPI
+- ASP.NET Core Web API
+- C#
+
+### Veri Katmanı
+
+- PostgreSQL
+- pgvector
+- SEC EDGAR
+
+### Arayüz
+
+- Streamlit
+
+## Güncel Sistem Mimarisi
 
 ```text
-SEC EDGAR
-↓
-10-K Raporları
-↓
-Metin Temizleme
-↓
-Chunking
-↓
-Embedding Üretimi
-↓
-Vector Search
-↓
-RAG Cevabı
-↓
-Kaynak Chunk Gösterimi
+SEC EDGAR 10-K Raporları
+          ↓
+Python Veri İşleme Katmanı
+Temizleme → Chunking → Embedding
+          ↓
+PostgreSQL + pgvector
+          ↓
+FastAPI Dahili AI Servisi
+/search → /ask
+          ↓
+Microsoft Foundry Local
+Qwen2.5-7B
+          ↓
+ASP.NET Core Web API
+          ↓
+Streamlit / API İstemcileri
+```
+
+## Servis Sorumlulukları
+
+### Python
+
+- SEC dokümanlarını işleme
+- Metin temizleme ve chunking
+- Embedding üretme
+- pgvector semantic search
+- Foundry Local model entegrasyonu
+- RAG cevap üretme
+- Cevap kalite kontrolleri
+
+### FastAPI
+
+FastAPI, ASP.NET Core tarafından kullanılan dahili AI servisidir.
+
+| Method | Endpoint | Açıklama |
+|---|---|---|
+| GET | `/health` | Servis sağlık kontrolü |
+| GET | `/search` | pgvector semantic search |
+| POST | `/ask` | Kaynak temelli RAG cevabı |
+
+### ASP.NET Core Web API
+
+ASP.NET Core, sistemin dışarıya açılan temel API katmanıdır.
+
+| Method | Endpoint | Açıklama |
+|---|---|---|
+| GET | `/api/health` | API sağlık kontrolü |
+| GET | `/api/postgres/companies` | Şirket listesi |
+| GET | `/api/postgres/stats/summary` | Veri özeti |
+| GET | `/api/postgres/filings` | SEC filing kayıtları |
+| GET | `/api/postgres/chunks` | Doküman parçaları |
+| GET | `/api/postgres/search` | Semantic search |
+| POST | `/api/rag/ask` | RAG cevap üretimi |
+
+## RAG Cevap Kalite Sistemi
+
+Projede, üretilen cevapların yalnızca HTTP seviyesinde çalışması değil, içerik kalitesi açısından da denetlenmesi için otomatik değerlendirme sistemi bulunmaktadır.
+
+Her cevap aşağıdaki kontrollerden geçirilir:
+
+- HTTP 200 yanıtı
+- Cevap varlığı
+- En az üç kaynak
+- Üç ile beş arasında risk maddesi
+- Her maddede kaynak atfı
+- Atıfların kaynak aralığında bulunması
+- Tam `[Kaynak N]` biçimi
+- Bozulmuş veya aralıklı kısaltma bulunmaması
+- Birleşmiş kelime hatası bulunmaması
+- Risk maddelerinin kısa ve anlaşılır olması
+- Yatırım tavsiyesi uyarısı
+- Yasaklı veya düşük kaliteli ifadelerin bulunmaması
+- Tekrarlanan maddelerin bulunmaması
+- Türkçe dil kontrolü
+- Makul cevap uzunluğu
+
+## Kalite Değerlendirme Sonucu
+
+14 Temmuz 2026 tarihinde beş şirket için gerçekleştirilen otomatik test sonucu:
+
+| Ticker | Sonuç | HTTP | Kaynak | Risk Maddesi | Atıf |
+|---|---:|---:|---:|---:|---:|
+| AAPL | PASS | 200 | 5 | 4 | 4 |
+| MSFT | PASS | 200 | 5 | 4 | 4 |
+| NVDA | PASS | 200 | 5 | 4 | 4 |
+| AMZN | PASS | 200 | 5 | 4 | 4 |
+| GOOGL | PASS | 200 | 5 | 4 | 4 |
+
+```text
+Toplam: 5
+Başarılı: 5
+Başarısız: 0
+Başarı oranı: %100
+```
+
+Bu test koşusunda kalite kapısı, beş şirket için kontrollü ve kaynak temelli fallback cevaplarını kullanmıştır. Böylece ham model çıktısı kalite kriterlerini karşılamadığında doğrulanabilir kaynaklara dayanan daha kararlı bir cevap üretilmektedir.
+
+Test çıktıları:
+
+- `reports/rag-quality/rag_quality_evaluation.json`
+- `reports/rag-quality/rag_quality_evaluation.csv`
+
+Değerlendirme komutu:
+
+```powershell
+& ".\.venv\Scripts\python.exe" .\src\evaluate_rag_answer_quality.py `
+    --output-dir .\reports\rag-quality
 ```
 
 ## Örnek Sorular
 
 ```text
-NVIDIA son 10-K raporunda yapay zeka ile ilgili hangi risklerden bahsediyor?
+NVIDIA'nın tedarik zinciri, ihracat kontrolleri ve yapay zeka talebiyle ilgili riskleri nelerdir?
 ```
 
 ```text
-Apple son 10-K raporunda tedarik zinciriyle ilgili hangi riskleri açıklıyor?
+Apple'ın temel iş riskleri nelerdir?
 ```
 
 ```text
-Microsoft son 10-K raporunda bulut hizmetleri ve rekabet hakkında ne söylüyor?
+Microsoft'un yapay zeka, bulut ve siber güvenlik riskleri nelerdir?
 ```
 
-## Geliştirme Planı
+```text
+Amazon'un AWS, lojistik, operasyonel maliyetler ve düzenleyici riskleri nelerdir?
+```
 
-### V1
+## Proje Durumu
 
-* SEC 10-K raporları
-* RAG cevap üretimi
-* Türkçe Streamlit arayüz
-* Cevap altında source chunk gösterimi
+### Tamamlanan Bileşenler
 
-### V2
+- SEC 10-K veri işleme hattı
+- Metin temizleme ve chunking
+- Çok dilli embedding üretimi
+- PostgreSQL ve pgvector entegrasyonu
+- Semantic search
+- FastAPI dahili AI servisi
+- Microsoft Foundry Local entegrasyonu
+- ASP.NET Core Web API
+- Kaynak temelli RAG cevap endpointi
+- Kontrollü cevap kalite mekanizması
+- Beş şirketlik otomatik kalite değerlendirmesi
+- JSON ve CSV kalite raporları
 
-* ASP.NET Core Web API
-* Piyasa verisi katmanı
-* PostgreSQL + pgvector
-* 10-Q raporları
-* Power BI dashboard
+### Devam Eden Çalışmalar
+
+- Streamlit arayüzünün güncel ASP.NET Core API ile entegrasyonu
+- Arayüz ve kullanıcı deneyimi iyileştirmeleri
+- Streamlit → ASP.NET Core → FastAPI → pgvector → Foundry Local uçtan uca testi
+- Kurulum ve çalıştırma dokümantasyonu
+- Demo video ve proje sunumu
+
+### Planlanan Geliştirmeler
+
+- Microsoft Semantic Kernel orkestrasyon katmanı
+- SEC 10-Q raporları
+- Piyasa verisi katmanı
+- Power BI dashboard
+- Daha geniş şirket kapsamı
+- Model cevabı ve kontrollü fallback kullanım oranlarının ölçülmesi
+
+## API Dokümantasyonu
+
+PostgreSQL, pgvector ve ASP.NET Core entegrasyonuna ilişkin ayrıntılı dokümantasyon:
+
+[`docs/postgres_pgvector_api.md`](docs/postgres_pgvector_api.md)
 
 ## Yasal Uyarı
 
-Bu proje yatırım tavsiyesi vermez. Yalnızca SEC raporları üzerinden araştırma amaçlı özetleme ve doküman temelli bilgi sunumu yapar.
+Bu proje yatırım tavsiyesi vermez.
 
-## PostgreSQL + pgvector API Documentation
-
-Additional notes about the PostgreSQL, pgvector and ASP.NET Core API integration are available in:
-
-docs/postgres_pgvector_api.md
+Üretilen cevaplar yalnızca SEC raporları üzerinden araştırma, özetleme ve doküman temelli bilgi sunma amacı taşır. Finansal kararlar için tek başına kullanılmamalıdır.
