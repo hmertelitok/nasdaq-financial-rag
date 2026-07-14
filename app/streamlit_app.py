@@ -11,15 +11,16 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from rag_assistant import (
+from market_data import get_market_snapshot
+from rag_api_client import (
+    API_BASE_URL,
+    RagApiError,
     SUPPORTED_COMPANIES,
-    answer_all_companies,
-    answer_question,
+    ask_all_companies,
+    ask_company,
+    check_api_health,
     get_default_query,
 )
-
-from db_manager import initialize_database, save_rag_result
-from market_data import get_market_snapshot
 
 
 st.set_page_config(
@@ -101,11 +102,9 @@ def apply_custom_style() -> None:
     )
 
 
-@st.cache_resource
-def setup_database() -> bool:
-    initialize_database()
-    return True
-
+@st.cache_data(ttl=15, show_spinner=False)
+def load_api_health() -> Dict[str, Any]:
+    return check_api_health()
 
 @st.cache_data(ttl=900)
 def load_market_snapshot(ticker: str) -> Dict[str, Any]:
@@ -124,10 +123,6 @@ def initialize_session_state() -> None:
 
     if "last_company" not in st.session_state:
         st.session_state.last_company = None
-
-    if "last_saved_query_ids" not in st.session_state:
-        st.session_state.last_saved_query_ids = []
-
 
 def render_header() -> None:
     st.markdown(
@@ -162,23 +157,31 @@ def render_sidebar() -> Dict[str, Any]:
         step=1,
     )
 
-    use_foundry_local = st.sidebar.toggle(
-        "Foundry Local LLM kullan",
-        value=True,
-        help=(
-            "Kapalı olursa sistem kaynak tabanlı fallback cevap üretir. "
-            "Hızlı UI testi için kullanılabilir."
-        ),
-    )
+    st.sidebar.divider()
+    st.sidebar.markdown("### API Durumu")
+
+    try:
+        health = load_api_health()
+
+        if health.get("status") == "healthy":
+            st.sidebar.success("ASP.NET Core API çalışıyor")
+        else:
+            st.sidebar.warning("API beklenmeyen durumda")
+
+    except RagApiError as error:
+        st.sidebar.error("ASP.NET Core API bağlantısı yok")
+        st.sidebar.caption(str(error))
+
+    st.sidebar.caption(f"API adresi: {API_BASE_URL}")
 
     st.sidebar.divider()
-
     st.sidebar.markdown("### Sistem")
-    st.sidebar.markdown("- Retrieval: Semantic Hybrid Rerank")
+    st.sidebar.markdown("- Public API: ASP.NET Core")
+    st.sidebar.markdown("- AI Servisi: FastAPI")
+    st.sidebar.markdown("- Retrieval: PostgreSQL + pgvector")
     st.sidebar.markdown("- LLM: Foundry Local / Qwen2.5-7B")
     st.sidebar.markdown("- Veri: SEC 10-K Reports")
     st.sidebar.markdown("- Market Data: yfinance")
-    st.sidebar.markdown("- Veritabanı: SQLite")
     st.sidebar.markdown("- Dil: Türkçe")
 
     st.sidebar.divider()
@@ -186,16 +189,14 @@ def render_sidebar() -> Dict[str, Any]:
     with st.sidebar.expander("Yasal uyarı", expanded=False):
         st.caption(
             "Bu uygulama yatırım tavsiyesi sunmaz. "
-            "Üretilen yanıtlar yalnızca SEC 10-K raporlarına dayalı araştırma amaçlıdır. "
-            "Piyasa verileri bağlamsal bilgi sağlamak için gösterilir."
+            "Üretilen yanıtlar yalnızca SEC 10-K raporlarına "
+            "dayalı araştırma amaçlıdır."
         )
 
     return {
         "selected_company": selected_company,
         "top_k": top_k,
-        "use_foundry_local": use_foundry_local,
     }
-
 
 def get_company_display_name(ticker: str) -> str:
     if ticker == "ALL":
@@ -373,7 +374,6 @@ def render_source(source: Dict[str, Any], index: int) -> None:
     raw_section = source.get("raw_section", section)
     chunk_id = source.get("chunk_id", "N/A")
     score = source.get("score", "N/A")
-    original_score = source.get("original_score", "N/A")
     retrieval_type = source.get("retrieval_type", "N/A")
     embedding_model = source.get("embedding_model", "N/A")
     source_url = source.get("source_document_url", "")
@@ -390,8 +390,7 @@ def render_source(source: Dict[str, Any], index: int) -> None:
             **Section:** {section}  
             **Raw Section:** {raw_section}  
             **Chunk ID:** `{chunk_id}`  
-            **Hybrid Score:** `{score}`  
-            **Semantic Score:** `{original_score}`  
+            **Benzerlik Skoru:** `{score}`  
             **Retrieval Type:** `{retrieval_type}`  
             **Embedding Model:** `{embedding_model}`
             """
@@ -447,140 +446,83 @@ def reset_previous_results() -> None:
     st.session_state.last_results = None
     st.session_state.last_mode = None
     st.session_state.last_company = None
-    st.session_state.last_saved_query_ids = []
-
-
-def save_single_result_to_database(
-    query_text: str,
-    result: Dict[str, Any],
-    ticker: Optional[str],
-    top_k: int,
-    use_foundry_local: bool,
-) -> int:
-    query_id = save_rag_result(
-        query_text=query_text,
-        result=result,
-        ticker=ticker,
-        top_k=top_k,
-        use_foundry_local=use_foundry_local,
-    )
-
-    return query_id
-
 
 def run_analysis(
     selected_company: str,
     query: str,
     default_query: str,
     top_k: int,
-    use_foundry_local: bool,
 ) -> None:
     reset_previous_results()
 
-    saved_query_ids = []
+    normalized_query = query.strip()
 
     if selected_company == "ALL":
-        custom_query = None if query.strip() == default_query else query.strip()
-
-        results = answer_all_companies(
-            query=custom_query,
-            top_k=top_k,
-            use_foundry_local=use_foundry_local,
+        custom_query = (
+            None
+            if normalized_query == default_query
+            else normalized_query
         )
 
-        for result in results:
-            sources = result.get("sources", [])
-
-            if sources:
-                ticker = sources[0].get("ticker")
-            else:
-                ticker = None
-
-            query_id = save_single_result_to_database(
-                query_text=result.get("query", query.strip()),
-                result=result,
-                ticker=ticker,
-                top_k=top_k,
-                use_foundry_local=use_foundry_local,
-            )
-
-            saved_query_ids.append(query_id)
+        results = ask_all_companies(
+            query=custom_query,
+            top_k=top_k,
+        )
 
         st.session_state.last_results = results
         st.session_state.last_mode = "ALL"
         st.session_state.last_company = selected_company
-        st.session_state.last_saved_query_ids = saved_query_ids
         return
 
-    result = answer_question(
-        query=query.strip(),
+    result = ask_company(
+        query=normalized_query,
         ticker=selected_company,
         top_k=top_k,
-        use_foundry_local=use_foundry_local,
     )
-
-    query_id = save_single_result_to_database(
-        query_text=query.strip(),
-        result=result,
-        ticker=selected_company,
-        top_k=top_k,
-        use_foundry_local=use_foundry_local,
-    )
-
-    saved_query_ids.append(query_id)
 
     st.session_state.last_result = result
     st.session_state.last_mode = "SINGLE"
     st.session_state.last_company = selected_company
-    st.session_state.last_saved_query_ids = saved_query_ids
 
-
-def render_database_save_info() -> None:
-    saved_query_ids = st.session_state.get("last_saved_query_ids", [])
-
-    if not saved_query_ids:
-        return
-
-    if len(saved_query_ids) == 1:
-        st.success(
-            f"Analiz sonucu SQLite veritabanına kaydedildi. Query ID: {saved_query_ids[0]}"
+def render_saved_results() -> None:
+    if (
+        st.session_state.last_mode == "ALL"
+        and st.session_state.last_results
+    ):
+        render_all_company_results(
+            st.session_state.last_results
         )
         return
 
-    query_ids_text = ", ".join(str(query_id) for query_id in saved_query_ids)
+    if (
+        st.session_state.last_mode == "SINGLE"
+        and st.session_state.last_result
+    ):
+        render_single_company_result(
+            st.session_state.last_result
+        )
+        return
 
-    st.success(
-        f"Analiz sonuçları SQLite veritabanına kaydedildi. Query ID'ler: {query_ids_text}"
+    st.info(
+        "Analiz başlatmak için 'Analiz Et' butonuna tıkla."
     )
-
-
-def render_saved_results() -> None:
-    render_database_save_info()
-
-    if st.session_state.last_mode == "ALL" and st.session_state.last_results:
-        render_all_company_results(st.session_state.last_results)
-        return
-
-    if st.session_state.last_mode == "SINGLE" and st.session_state.last_result:
-        render_single_company_result(st.session_state.last_result)
-        return
-
-    st.info("Analiz başlatmak için 'Analiz Et' butonuna tıkla.")
-
 
 def main() -> None:
     apply_custom_style()
     initialize_session_state()
-    setup_database()
     render_header()
 
     settings = render_sidebar()
 
     selected_company = settings["selected_company"]
     top_k = settings["top_k"]
-    use_foundry_local = settings["use_foundry_local"]
 
-    ticker_for_default = None if selected_company == "ALL" else selected_company
+    ticker_for_default = (
+        None
+        if selected_company == "ALL"
+        else selected_company
+    )
+
     default_query = get_default_query(ticker_for_default)
 
     if selected_company == "ALL":
@@ -612,9 +554,11 @@ def main() -> None:
         st.markdown(
             f"""
             <div class="small-muted">
-            Analiz kapsamı: <b>{get_company_display_name(selected_company)}</b> ·
+            Analiz kapsamı:
+            <b>{get_company_display_name(selected_company)}</b> ·
             Kullanılan kaynak: <b>{top_k}</b> ·
-            Yanıt motoru: <b>{"Foundry Local" if use_foundry_local else "Kaynak tabanlı özetleme"}</b>
+            İstek yolu:
+            <b>Streamlit → ASP.NET Core → FastAPI</b>
             </div>
             """,
             unsafe_allow_html=True,
@@ -626,24 +570,33 @@ def main() -> None:
             return
 
         try:
+            load_api_health.clear()
+            check_api_health()
+
             with st.spinner(
-                "Analiz hazırlanıyor. Foundry Local modeli yükleniyorsa bu işlem biraz sürebilir..."
+                "SEC kaynakları taranıyor ve "
+                "RAG cevabı hazırlanıyor..."
             ):
                 run_analysis(
                     selected_company=selected_company,
                     query=query,
                     default_query=default_query,
                     top_k=top_k,
-                    use_foundry_local=use_foundry_local,
                 )
 
+        except RagApiError as error:
+            st.error(
+                "ASP.NET Core RAG API isteği başarısız oldu."
+            )
+            st.code(str(error))
+            return
+
         except Exception as error:
-            st.error("Analiz sırasında hata oluştu.")
+            st.error("Analiz sırasında beklenmeyen hata oluştu.")
             st.exception(error)
             return
 
     render_saved_results()
-
 
 if __name__ == "__main__":
     main()
