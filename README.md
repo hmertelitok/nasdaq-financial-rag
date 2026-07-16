@@ -233,14 +233,15 @@ Amazon'un AWS, lojistik, operasyonel maliyetler ve düzenleyici riskleri nelerdi
 - Kontrollü cevap kalite mekanizması
 - Beş şirketlik otomatik kalite değerlendirmesi
 - JSON ve CSV kalite raporları
+- Streamlit arayüzünün ASP.NET Core RAG API ile entegrasyonu
+- Tek şirket ve tüm şirketler için uçtan uca sistem testi
+- Kurulum ve çalıştırma dokümantasyonu
 
 ### Devam Eden Çalışmalar
 
-- Streamlit arayüzünün güncel ASP.NET Core API ile entegrasyonu
-- Arayüz ve kullanıcı deneyimi iyileştirmeleri
-- Streamlit → ASP.NET Core → FastAPI → pgvector → Foundry Local uçtan uca testi
-- Kurulum ve çalıştırma dokümantasyonu
-- Demo video ve proje sunumu
+- Son arayüz ve kullanıcı deneyimi iyileştirmeleri
+- Demo videosu ve proje sunumu
+- Son sürüm kontrol listesi
 
 ### Planlanan Geliştirmeler
 
@@ -250,6 +251,21 @@ Amazon'un AWS, lojistik, operasyonel maliyetler ve düzenleyici riskleri nelerdi
 - Power BI dashboard
 - Daha geniş şirket kapsamı
 - Model cevabı ve kontrollü fallback kullanım oranlarının ölçülmesi
+
+## Kurulum ve Çalıştırma
+
+Windows ve PowerShell için ayrıntılı kurulum, servis başlatma sırası, sağlık kontrolleri ve sorun giderme adımları:
+
+[`docs/setup_and_run.md`](docs/setup_and_run.md)
+
+Hızlı servis sırası:
+
+```text
+PostgreSQL + pgvector
+→ FastAPI
+→ ASP.NET Core Web API
+→ Streamlit
+```
 
 ## API Dokümantasyonu
 
