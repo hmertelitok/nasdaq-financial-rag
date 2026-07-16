@@ -19,7 +19,6 @@ from rag_api_client import (
     ask_all_companies,
     ask_company,
     check_api_health,
-    get_default_query,
 )
 
 
@@ -106,23 +105,24 @@ def apply_custom_style() -> None:
 def load_api_health() -> Dict[str, Any]:
     return check_api_health()
 
+
 @st.cache_data(ttl=900)
 def load_market_snapshot(ticker: str) -> Dict[str, Any]:
     return get_market_snapshot(ticker)
 
 
 def initialize_session_state() -> None:
-    if "last_result" not in st.session_state:
-        st.session_state.last_result = None
+    defaults = {
+        "last_result": None,
+        "last_results": None,
+        "last_mode": None,
+        "last_company": None,
+    }
 
-    if "last_results" not in st.session_state:
-        st.session_state.last_results = None
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
-    if "last_mode" not in st.session_state:
-        st.session_state.last_mode = None
-
-    if "last_company" not in st.session_state:
-        st.session_state.last_company = None
 
 def render_header() -> None:
     st.markdown(
@@ -198,6 +198,7 @@ def render_sidebar() -> Dict[str, Any]:
         "top_k": top_k,
     }
 
+
 def get_company_display_name(ticker: str) -> str:
     if ticker == "ALL":
         return "Tüm şirketler"
@@ -233,7 +234,6 @@ def format_price_delta(
     try:
         change_float = float(change_value)
         percent_float = float(change_percent)
-
         return f"{change_float:+.2f} {currency} ({percent_float:+.2f}%)"
     except (TypeError, ValueError):
         return "N/A"
@@ -242,17 +242,11 @@ def format_price_delta(
 def render_company_coverage() -> None:
     st.markdown("### İncelenen Şirketler")
     st.caption(
-        "Sistem, seçili NASDAQ şirketlerinin SEC 10-K raporlarını kaynak alarak finansal risk ve faaliyet analizi üretir."
+        "Sistem, seçili NASDAQ şirketlerinin SEC 10-K raporlarını "
+        "kaynak alarak finansal risk ve faaliyet analizi üretir."
     )
 
-    company_cards = [
-        ("AAPL", "Apple Inc."),
-        ("MSFT", "Microsoft Corporation"),
-        ("NVDA", "NVIDIA Corporation"),
-        ("AMZN", "Amazon.com, Inc."),
-        ("GOOGL", "Alphabet Inc."),
-    ]
-
+    company_cards = list(SUPPORTED_COMPANIES.items())
     columns = st.columns(len(company_cards))
 
     for column, (ticker, company_name) in zip(columns, company_cards):
@@ -276,7 +270,8 @@ def render_market_snapshot(ticker: str) -> None:
 
     if not snapshot.get("ok"):
         st.warning(
-            f"{ticker} için piyasa verisi alınamadı: {snapshot.get('error')}"
+            f"{ticker} için piyasa verisi alınamadı: "
+            f"{snapshot.get('error')}"
         )
         return
 
@@ -287,21 +282,18 @@ def render_market_snapshot(ticker: str) -> None:
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.metric(
-            label="Ticker",
-            value=snapshot.get("ticker", ticker),
-        )
+        st.metric("Ticker", snapshot.get("ticker", ticker))
 
     with col2:
         st.metric(
-            label="Last Close",
-            value=format_money(snapshot.get("last_close"), currency),
+            "Last Close",
+            format_money(snapshot.get("last_close"), currency),
         )
 
     with col3:
         st.metric(
-            label="Daily Change",
-            value=format_percent(daily_change_percent),
+            "Daily Change",
+            format_percent(daily_change_percent),
             delta=format_price_delta(
                 daily_change,
                 daily_change_percent,
@@ -310,25 +302,38 @@ def render_market_snapshot(ticker: str) -> None:
         )
 
     with col4:
-        st.metric(
-            label="Price Date",
-            value=snapshot.get("price_date", "N/A"),
-        )
+        st.metric("Price Date", snapshot.get("price_date", "N/A"))
 
     st.caption(
-        "Piyasa verileri yalnızca bağlamsal bilgi sağlamak amacıyla sunulur. "
-        "Üretilen yanıtlar SEC 10-K raporlarına dayalıdır ve yatırım tavsiyesi niteliği taşımaz."
+        "Piyasa verileri yalnızca bağlamsal bilgi sağlamak amacıyla "
+        "sunulur. Üretilen yanıtlar SEC 10-K raporlarına dayalıdır "
+        "ve yatırım tavsiyesi niteliği taşımaz."
     )
 
 
-def calculate_result_metrics(result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def safe_float(value: Any) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def calculate_result_metrics(
+    result: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
     sources = result.get("sources", [])
 
     if not sources:
         return None
 
-    sections = [source.get("section", "Unknown") for source in sources]
-    scores = [float(source.get("score", 0)) for source in sources]
+    sections = [
+        source.get("section") or "Unknown"
+        for source in sources
+    ]
+    scores = [
+        safe_float(source.get("score"))
+        for source in sources
+    ]
 
     return {
         "source_count": len(sources),
@@ -353,7 +358,10 @@ def render_metrics(result: Dict[str, Any]) -> None:
         st.metric("Ortalama Skor", metrics["avg_score"])
 
     with col3:
-        st.metric("Section Çeşitliliği", metrics["section_diversity"])
+        st.metric(
+            "Section Çeşitliliği",
+            metrics["section_diversity"],
+        )
 
     with col4:
         st.metric("Top Section", metrics["top_section"])
@@ -362,7 +370,7 @@ def render_metrics(result: Dict[str, Any]) -> None:
 def render_answer(result: Dict[str, Any]) -> None:
     with st.container(border=True):
         st.markdown("### RAG Cevabı")
-        st.markdown(result.get("answer", "Cevap üretilemedi."))
+        st.markdown(result.get("answer") or "Cevap üretilemedi.")
 
 
 def render_source(source: Dict[str, Any], index: int) -> None:
@@ -379,7 +387,9 @@ def render_source(source: Dict[str, Any], index: int) -> None:
     source_url = source.get("source_document_url", "")
     excerpt = source.get("excerpt", "")
 
-    expander_title = f"Kaynak {index}: {ticker} | {section} | Skor: {score}"
+    expander_title = (
+        f"Kaynak {index}: {ticker} | {section} | Skor: {score}"
+    )
 
     with st.expander(expander_title, expanded=index == 1):
         st.markdown(
@@ -425,14 +435,25 @@ def render_single_company_result(result: Dict[str, Any]) -> None:
     render_sources(result)
 
 
-def render_all_company_results(results: List[Dict[str, Any]]) -> None:
+def render_all_company_results(
+    results: List[Dict[str, Any]],
+) -> None:
     for result in results:
         sources = result.get("sources", [])
+        ticker = result.get("ticker")
 
         if sources:
-            ticker = sources[0].get("ticker", "N/A")
-            company_name = sources[0].get("company_name", "N/A")
+            ticker = sources[0].get("ticker") or ticker
+            company_name = (
+                sources[0].get("company_name")
+                or SUPPORTED_COMPANIES.get(ticker, "N/A")
+            )
             title = f"{ticker} - {company_name}"
+        elif ticker:
+            title = (
+                f"{ticker} - "
+                f"{SUPPORTED_COMPANIES.get(ticker, ticker)}"
+            )
         else:
             title = "Kaynak bulunamadı"
 
@@ -447,25 +468,18 @@ def reset_previous_results() -> None:
     st.session_state.last_mode = None
     st.session_state.last_company = None
 
+
 def run_analysis(
     selected_company: str,
     query: str,
-    default_query: str,
     top_k: int,
 ) -> None:
     reset_previous_results()
-
     normalized_query = query.strip()
 
     if selected_company == "ALL":
-        custom_query = (
-            None
-            if normalized_query == default_query
-            else normalized_query
-        )
-
         results = ask_all_companies(
-            query=custom_query,
+            query=normalized_query,
             top_k=top_k,
         )
 
@@ -484,28 +498,24 @@ def run_analysis(
     st.session_state.last_mode = "SINGLE"
     st.session_state.last_company = selected_company
 
+
 def render_saved_results() -> None:
     if (
         st.session_state.last_mode == "ALL"
         and st.session_state.last_results
     ):
-        render_all_company_results(
-            st.session_state.last_results
-        )
+        render_all_company_results(st.session_state.last_results)
         return
 
     if (
         st.session_state.last_mode == "SINGLE"
         and st.session_state.last_result
     ):
-        render_single_company_result(
-            st.session_state.last_result
-        )
+        render_single_company_result(st.session_state.last_result)
         return
 
-    st.info(
-        "Analiz başlatmak için 'Analiz Et' butonuna tıkla."
-    )
+    st.info("Analiz başlatmak için 'Analiz Et' butonuna tıkla.")
+
 
 def main() -> None:
     apply_custom_style()
@@ -513,17 +523,9 @@ def main() -> None:
     render_header()
 
     settings = render_sidebar()
-
     selected_company = settings["selected_company"]
     top_k = settings["top_k"]
 
-    ticker_for_default = (
-        None
-        if selected_company == "ALL"
-        else selected_company
-    )
-
-    default_query = get_default_query(ticker_for_default)
 
     if selected_company == "ALL":
         render_company_coverage()
@@ -536,7 +538,8 @@ def main() -> None:
 
     query = st.text_area(
         "Analiz etmek istediğin soruyu yaz",
-        value=default_query,
+        value="",
+        placeholder="Sorunuzu buraya yazın...",
         height=120,
         key=f"query_input_{selected_company}",
     )
@@ -574,20 +577,16 @@ def main() -> None:
             check_api_health()
 
             with st.spinner(
-                "SEC kaynakları taranıyor ve "
-                "RAG cevabı hazırlanıyor..."
+                "SEC kaynakları taranıyor ve RAG cevabı hazırlanıyor..."
             ):
                 run_analysis(
                     selected_company=selected_company,
                     query=query,
-                    default_query=default_query,
                     top_k=top_k,
                 )
 
         except RagApiError as error:
-            st.error(
-                "ASP.NET Core RAG API isteği başarısız oldu."
-            )
+            st.error("ASP.NET Core RAG API isteği başarısız oldu.")
             st.code(str(error))
             return
 
@@ -597,6 +596,7 @@ def main() -> None:
             return
 
     render_saved_results()
+
 
 if __name__ == "__main__":
     main()
