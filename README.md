@@ -1,10 +1,39 @@
 # NASDAQ Financial RAG Assistant
 
-Microsoft AI Innovators Summer Internship kapsamında geliştirilen, seçili NASDAQ şirketlerinin SEC 10-K raporları üzerinde çalışan Türkçe finansal araştırma asistanıdır.
+Microsoft AI Innovators Summer Internship programı kapsamında geliştirilen **NASDAQ Financial RAG Assistant**, seçili NASDAQ şirketlerinin SEC 10-K raporları üzerinde çalışan Türkçe bir finansal araştırma asistanıdır.
 
-Sistem; kullanıcı sorusuyla ilgili rapor parçalarını PostgreSQL ve pgvector üzerinden getirir, Microsoft Foundry Local üzerinde çalışan yerel dil modeliyle kaynak temelli yanıt üretir ve cevabın dayandığı filing, section, chunk ve benzerlik skorlarını gösterir.
+Sistem; kullanıcı sorusuyla ilgili rapor parçalarını PostgreSQL ve pgvector üzerinden getirir, Microsoft Foundry Local üzerinde çalışan yerel dil modeliyle kaynak temelli yanıt üretir ve cevabın dayandığı filing, section, chunk ve benzerlik skorlarını kullanıcıya gösterir.
 
-> Proje yatırım tavsiyesi üretmez. SEC raporlarının araştırılması, özetlenmesi ve kaynak temelli analiz edilmesi amacıyla geliştirilmiştir.
+> Bu proje yatırım tavsiyesi üretmez. SEC raporlarının araştırılması, özetlenmesi ve kaynak temelli analiz edilmesi amacıyla geliştirilmiştir.
+
+## Uygulama Görselleri
+
+### Modern Streamlit Arayüzü
+
+ASP.NET Core, FastAPI, PostgreSQL + pgvector ve Microsoft Foundry Local bileşenlerini tek bir araştırma arayüzünde birleştiren kontrol paneli.
+
+![NASDAQ Financial RAG Dashboard](docs/images/streamlit-dashboard.png)
+
+### Kaynak Temelli RAG Cevabı
+
+Kullanıcı soruları, seçilen SEC 10-K rapor parçaları kullanılarak kaynak referanslarıyla yanıtlanır.
+
+![NASDAQ Financial RAG Result](docs/images/streamlit-rag-result.png)
+
+### Kaynak Şeffaflığı
+
+Her cevap için şirket, filing tarihi, bölüm, chunk ID, benzerlik skoru, retrieval türü ve embedding modeli görüntülenir.
+
+![NASDAQ Financial RAG Source Details](docs/images/streamlit-source-details.png)
+
+<details>
+<summary>Orijinal SEC 10-K kaynağını görüntüle</summary>
+
+<br>
+
+![Microsoft SEC 10-K Filing](docs/images/sec-filing-verification.png)
+
+</details>
 
 ## Proje Amacı
 
@@ -16,7 +45,8 @@ Bu projenin amacı, genel amaçlı bir chatbot geliştirmek yerine:
 - Yanıtlarını kaynak parçalarıyla destekleyen
 - Yerel model ve yerel veri altyapısı kullanabilen
 - Python ve ASP.NET Core servislerini birlikte kullanan
-- Yanıt kalitesini otomatik testlerle denetleyen
+- Yanıt kalitesini otomatik kontrollerle denetleyen
+- Kaynak şeffaflığını kullanıcı arayüzünde gösteren
 
 bir finansal RAG sistemi oluşturmaktır.
 
@@ -50,14 +80,18 @@ bulunmaktadır.
 - PostgreSQL ve pgvector üzerinde vektör saklama
 - Semantic search ile ilgili doküman parçalarını getirme
 - Microsoft Foundry Local ile yerel yanıt üretimi
-- Türkçe kaynak temelli RAG cevapları
+- Türkçe ve kaynak temelli RAG cevapları
 - Cevaplarda `[Kaynak N]` biçiminde atıf gösterimi
-- Filing type, section, chunk ve skor bilgisi
+- Filing type, section, chunk ve benzerlik skoru bilgisi
 - FastAPI tabanlı dahili AI servisi
 - ASP.NET Core Web API üzerinden dış servis katmanı
+- Tek şirket ve tüm şirketler için analiz
+- Şirket bazlı dinamik örnek sorular
+- Kullanıcı dostu API hata yönetimi
+- Aşamalı analiz durumu ve yükleme geri bildirimi
 - Otomatik RAG cevap kalite değerlendirmesi
-- JSON ve CSV test raporları
-- Türkçe Streamlit dark theme arayüzü
+- JSON ve CSV kalite raporları
+- Modern Streamlit dark theme arayüzü
 
 ## Kullanılan Teknolojiler
 
@@ -86,6 +120,21 @@ bulunmaktadır.
 ### Arayüz
 
 - Streamlit
+
+## Orkestrasyon Framework Kararı
+
+Mevcut RAG hattı belirli, kontrollü ve test edilebilir olduğu için Semantic Kernel veya Microsoft Agent Framework bu sürüme eklenmemiştir.
+
+Bu kararla:
+
+- Mevcut deterministik RAG mimarisi korunmuştur.
+- Retrieval, cevap üretimi ve kalite kontrolü mevcut servis sınırlarında tutulmuştur.
+- Gereksiz framework bağımlılığı ve bakım yükü önlenmiştir.
+- Agent tabanlı orchestration yalnızca gerçek bir ürün ihtiyacı oluştuğunda yeniden değerlendirilmek üzere ertelenmiştir.
+
+Ayrıntılı mimari karar belgesi:
+
+[`docs/orchestration_framework_assessment.md`](docs/orchestration_framework_assessment.md)
 
 ## Güncel Sistem Mimarisi
 
@@ -153,15 +202,15 @@ Her cevap aşağıdaki kontrollerden geçirilir:
 - HTTP 200 yanıtı
 - Cevap varlığı
 - En az üç kaynak
-- Üç ile beş arasında risk maddesi
+- Beklenen madde sayısı
 - Her maddede kaynak atfı
 - Atıfların kaynak aralığında bulunması
 - Tam `[Kaynak N]` biçimi
 - Bozulmuş veya aralıklı kısaltma bulunmaması
 - Birleşmiş kelime hatası bulunmaması
-- Risk maddelerinin kısa ve anlaşılır olması
+- Maddelerin kısa ve anlaşılır olması
 - Yatırım tavsiyesi uyarısı
-- Yasaklı veya düşük kaliteli ifadelerin bulunmaması
+- Düşük kaliteli ifadelerin bulunmaması
 - Tekrarlanan maddelerin bulunmaması
 - Türkçe dil kontrolü
 - Makul cevap uzunluğu
@@ -170,7 +219,7 @@ Her cevap aşağıdaki kontrollerden geçirilir:
 
 14 Temmuz 2026 tarihinde beş şirket için gerçekleştirilen otomatik test sonucu:
 
-| Ticker | Sonuç | HTTP | Kaynak | Risk Maddesi | Atıf |
+| Ticker | Sonuç | HTTP | Kaynak | Madde | Atıf |
 |---|---:|---:|---:|---:|---:|
 | AAPL | PASS | 200 | 5 | 4 | 4 |
 | MSFT | PASS | 200 | 5 | 4 | 4 |
@@ -185,7 +234,7 @@ Başarısız: 0
 Başarı oranı: %100
 ```
 
-Bu test koşusunda kalite kapısı, beş şirket için kontrollü ve kaynak temelli fallback cevaplarını kullanmıştır. Böylece ham model çıktısı kalite kriterlerini karşılamadığında doğrulanabilir kaynaklara dayanan daha kararlı bir cevap üretilmektedir.
+Bu test koşusunda kalite kapısı, beş şirket için kontrollü ve kaynak temelli fallback cevaplarını kullanmıştır. Ham model çıktısı kalite kriterlerini karşılamadığında doğrulanabilir kaynaklara dayanan daha kararlı bir cevap üretilmektedir.
 
 Test çıktıları:
 
@@ -202,15 +251,15 @@ Değerlendirme komutu:
 ## Örnek Sorular
 
 ```text
-NVIDIA'nın tedarik zinciri, ihracat kontrolleri ve yapay zeka talebiyle ilgili riskleri nelerdir?
+Microsoft'un bulut bilişim ve yapay zekâ yatırımları şirketin büyüme stratejisini nasıl destekliyor?
+```
+
+```text
+NVIDIA'nın tedarik zinciri, ihracat kontrolleri ve yapay zekâ talebiyle ilgili riskleri nelerdir?
 ```
 
 ```text
 Apple'ın temel iş riskleri nelerdir?
-```
-
-```text
-Microsoft'un yapay zeka, bulut ve siber güvenlik riskleri nelerdir?
 ```
 
 ```text
@@ -219,7 +268,9 @@ Amazon'un AWS, lojistik, operasyonel maliyetler ve düzenleyici riskleri nelerdi
 
 ## Proje Durumu
 
-### Tamamlanan Bileşenler
+Projenin temel veri işleme, retrieval, model entegrasyonu, API, kullanıcı arayüzü ve kalite değerlendirme bileşenleri tamamlanmıştır.
+
+Tamamlanan başlıca bileşenler:
 
 - SEC 10-K veri işleme hattı
 - Metin temizleme ve chunking
@@ -233,24 +284,10 @@ Amazon'un AWS, lojistik, operasyonel maliyetler ve düzenleyici riskleri nelerdi
 - Kontrollü cevap kalite mekanizması
 - Beş şirketlik otomatik kalite değerlendirmesi
 - JSON ve CSV kalite raporları
-- Streamlit arayüzünün ASP.NET Core RAG API ile entegrasyonu
+- Modern Streamlit arayüzü
 - Tek şirket ve tüm şirketler için uçtan uca sistem testi
 - Kurulum ve çalıştırma dokümantasyonu
-
-### Devam Eden Çalışmalar
-
-- Son arayüz ve kullanıcı deneyimi iyileştirmeleri
-- Demo videosu ve proje sunumu
 - Son sürüm kontrol listesi
-
-### Planlanan Geliştirmeler
-
-- Microsoft Semantic Kernel orkestrasyon katmanı
-- SEC 10-Q raporları
-- Piyasa verisi katmanı
-- Power BI dashboard
-- Daha geniş şirket kapsamı
-- Model cevabı ve kontrollü fallback kullanım oranlarının ölçülmesi
 
 ## Kurulum ve Çalıştırma
 
@@ -262,9 +299,12 @@ Hızlı servis sırası:
 
 ```text
 PostgreSQL + pgvector
-→ FastAPI
-→ ASP.NET Core Web API
-→ Streamlit
+        ↓
+FastAPI
+        ↓
+ASP.NET Core Web API
+        ↓
+Streamlit
 ```
 
 ## API Dokümantasyonu
@@ -275,6 +315,4 @@ PostgreSQL, pgvector ve ASP.NET Core entegrasyonuna ilişkin ayrıntılı doküm
 
 ## Yasal Uyarı
 
-Bu proje yatırım tavsiyesi vermez.
-
-Üretilen cevaplar yalnızca SEC raporları üzerinden araştırma, özetleme ve doküman temelli bilgi sunma amacı taşır. Finansal kararlar için tek başına kullanılmamalıdır.
+Bu proje yatırım tavsiyesi vermez. Üretilen cevaplar yalnızca SEC raporları üzerinden araştırma, özetleme ve doküman temelli bilgi sunma amacı taşır. Finansal kararlar için tek başına kullanılmamalıdır.
