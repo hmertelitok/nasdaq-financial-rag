@@ -8,7 +8,7 @@ Sistem; kullanıcı sorusuyla ilgili rapor parçalarını PostgreSQL ve pgvector
 
 ## Uygulama Görselleri
 
-### Modern Streamlit Arayüzü
+### Streamlit Arayüzü
 
 ASP.NET Core, FastAPI, PostgreSQL + pgvector ve Microsoft Foundry Local bileşenlerini tek bir araştırma arayüzünde birleştiren kontrol paneli.
 
