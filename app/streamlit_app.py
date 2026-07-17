@@ -261,6 +261,11 @@ def apply_custom_style() -> None:
             fill: #bacbe1 !important;
         }
 
+        [data-testid="stSidebar"] [data-testid="stSlider"] {
+            padding-top: 0.15rem;
+            padding-bottom: 0.35rem;
+        }
+
         [data-testid="stSidebar"] [data-testid="stExpander"] {
             overflow: hidden;
             border: 1px solid var(--border) !important;
@@ -457,8 +462,11 @@ def apply_custom_style() -> None:
             box-shadow: 0 9px 26px rgba(0, 0, 0, 0.13);
         }
 
+        div[data-testid="stMetricLabel"] *,
         div[data-testid="stMetricLabel"] p {
-            color: #96aac5 !important;
+            color: #b3c6de !important;
+            opacity: 1 !important;
+            font-weight: 600 !important;
         }
 
         div[data-testid="stMetricValue"] {
@@ -548,10 +556,11 @@ def apply_custom_style() -> None:
         .analysis-context {
             display: flex;
             align-items: center;
-            min-height: 100%;
+            min-height: 42px;
             color: var(--text-muted);
             font-size: 0.84rem;
-            padding-top: 0.42rem;
+            line-height: 1.45;
+            padding-top: 0;
         }
 
         .analysis-context strong {
@@ -638,8 +647,26 @@ def apply_custom_style() -> None:
             fill: #a9cfff !important;
         }
 
+        div[data-testid="stExpander"] div[data-testid="stAlert"] p,
+        div[data-testid="stExpander"] div[data-testid="stAlert"] li,
+        div[data-testid="stExpander"] div[data-testid="stAlert"] span {
+            color: #c7d9ee !important;
+            opacity: 1 !important;
+        }
+
         div[data-testid="stAlert"] {
             border-radius: 13px;
+        }
+
+        .empty-state {
+            margin-top: 0.15rem;
+            padding: 0.82rem 0.95rem;
+            border: 1px solid rgba(84, 166, 255, 0.20);
+            border-radius: 12px;
+            background: rgba(18, 43, 74, 0.62);
+            color: #d7e5f6 !important;
+            font-size: 0.86rem;
+            line-height: 1.5;
         }
 
         hr {
@@ -1438,9 +1465,14 @@ def render_saved_results() -> None:
         )
         return
 
-    st.info(
-        "Analiz başlatmak için sorunuzu yazın ve "
-        "'Analiz Et' butonuna tıklayın."
+    st.markdown(
+        """
+        <div class="empty-state">
+            Analiz başlatmak için sorunuzu yazın ve
+            <strong>Analiz Et</strong> butonuna tıklayın.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
@@ -1520,17 +1552,34 @@ def render_query_panel(
         return False
 
     try:
-        load_api_health.clear()
-        check_api_health()
+        with st.status(
+            "Finansal analiz hazırlanıyor...",
+            expanded=True,
+        ) as status:
+            st.write(
+                "ASP.NET Core API bağlantısı kontrol ediliyor..."
+            )
+            load_api_health.clear()
+            check_api_health()
 
-        with st.spinner(
-            "SEC kaynakları taranıyor ve "
-            "RAG cevabı hazırlanıyor..."
-        ):
+            st.write(
+                "SEC kaynakları pgvector ile taranıyor "
+                "ve en alakalı parçalar seçiliyor..."
+            )
+            st.write(
+                "Foundry Local kaynak temelli cevabı hazırlıyor..."
+            )
+
             run_analysis(
                 selected_company=selected_company,
                 query=query,
                 top_k=top_k,
+            )
+
+            status.update(
+                label="Analiz tamamlandı",
+                state="complete",
+                expanded=False,
             )
 
         return True
