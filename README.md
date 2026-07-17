@@ -121,6 +121,21 @@ bulunmaktadır.
 
 - Streamlit
 
+## Orkestrasyon Framework Kararı
+
+Mevcut RAG hattı belirli, kontrollü ve test edilebilir olduğu için Semantic Kernel veya Microsoft Agent Framework bu sürüme eklenmemiştir.
+
+Bu kararla:
+
+- Mevcut deterministik RAG mimarisi korunmuştur.
+- Retrieval, cevap üretimi ve kalite kontrolü mevcut servis sınırlarında tutulmuştur.
+- Gereksiz framework bağımlılığı ve bakım yükü önlenmiştir.
+- Agent tabanlı orchestration yalnızca gerçek bir ürün ihtiyacı oluştuğunda yeniden değerlendirilmek üzere ertelenmiştir.
+
+Ayrıntılı mimari karar belgesi:
+
+[`docs/orchestration_framework_assessment.md`](docs/orchestration_framework_assessment.md)
+
 ## Güncel Sistem Mimarisi
 
 ```text
