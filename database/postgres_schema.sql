@@ -31,7 +31,9 @@ CREATE TABLE IF NOT EXISTS document_chunks (
     section TEXT,
     raw_section TEXT,
     chunk_id TEXT,
+    chunk_index INTEGER,
     chunk_text TEXT NOT NULL,
+    token_count INTEGER DEFAULT 0,
     source_document_url TEXT,
     start_word_index INTEGER,
     end_word_index INTEGER,
@@ -114,9 +116,3 @@ ON rag_sources (query_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_embedding_hnsw
 ON document_chunks
 USING hnsw (embedding vector_cosine_ops);
--- Document chunk API compatibility columns
-ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS chunk_index INTEGER;
-ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS chunk_text TEXT;
-ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS token_count INTEGER DEFAULT 0;
-ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS embedding_model TEXT;
-ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS source_document_url TEXT;

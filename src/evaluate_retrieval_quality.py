@@ -7,7 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-from retriever import search_relevant_chunks
+# YENİ KOD: Eski retriever importu yerine güncel pgvector araması eklendi
+from pgvector_search import semantic_search
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -181,10 +182,11 @@ def ndcg_at_k(labels: List[int], k: int) -> float:
 
 
 def evaluate_query(query_case: Dict[str, Any]) -> Dict[str, Any]:
-    results = search_relevant_chunks(
+    # YENİ KOD: search_relevant_chunks yerine semantic_search çağrılıyor
+    results = semantic_search(
         query=query_case["query"],
         ticker=query_case["ticker"],
-        top_k=TOP_K,
+        limit=TOP_K, # Not: pgvector_search.py limit parametresi kullanmıyorsa bunu top_k=TOP_K olarak değiştirebilirsin.
     )
 
     source_rows = []
