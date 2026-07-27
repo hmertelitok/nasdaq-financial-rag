@@ -1,0 +1,53 @@
+name: Docker Image CI/CD (GHCR)
+
+on:
+  push:
+    branches: [ "main" ]
+    # Yeni bir sürüm (tag) çıkardığında da tetiklenir (örn: v1.0.0)
+    tags: [ 'v*.*.*' ]
+  # Manuel olarak GitHub Actions sekmesinden de tetikleyebilmen için
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  # Reponun adını otomatik alır (hmertelitok/nasdaq-financial-rag)
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # GHCR'a imaj yüklemek için gerekli izin
+
+    steps:
+      - name: Kodları Çek (Checkout)
+        uses: actions/checkout@v4
+
+      - name: GitHub Container Registry'ye Giriş Yap
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: İmaj Etiketlerini ve Meta Verilerini Hazırla
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Docker İmajını Derle ve Yükle
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
