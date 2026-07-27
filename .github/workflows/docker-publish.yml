@@ -3,14 +3,11 @@ name: Docker Image CI/CD (GHCR)
 on:
   push:
     branches: [ "main" ]
-    # Yeni bir sürüm (tag) çıkardığında da tetiklenir (örn: v1.0.0)
     tags: [ 'v*.*.*' ]
-  # Manuel olarak GitHub Actions sekmesinden de tetikleyebilmen için
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  # Reponun adını otomatik alır (hmertelitok/nasdaq-financial-rag)
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
@@ -18,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # GHCR'a imaj yüklemek için gerekli izin
+      packages: write
 
     steps:
       - name: Kodları Çek (Checkout)
@@ -49,5 +46,4 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Cache satırlarını kaldırdık - docker driver'ı desteklemiyor
