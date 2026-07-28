@@ -31,10 +31,13 @@ Sistem; kullanıcı sorusuyla ilgili rapor parçalarını PostgreSQL ve pgvector
 - [Kalite Değerlendirme Sonucu](#kalite-değerlendirme-sonucu)
 - [Örnek Sorular](#örnek-sorular)
 - [Proje Durumu](#proje-durumu)
+- [Kurulum ve Çalıştırma](#kurulum-ve-çalıştırma)
+- [API Dokümantasyonu](#api-dokümantasyonu)
 - [Katkıda Bulunma](#katkıda-bulunma)
 - [Lisans](#lisans)
 - [İletişim](#iletişim)
 - [Teşekkürler](#teşekkürler)
+- [Yasal Uyarı](#yasal-uyarı)
 
 ---
 
@@ -253,15 +256,15 @@ bulunmaktadır.
 ## Sistem Mimarisi
 
 ```mermaid
-graph TD
+flowchart TD
     A[SEC EDGAR 10-K Reports] --> B[Python Data Processing]
     B --> C[Cleaning]
     C --> D[Chunking]
     D --> E[Embeddings]
     E --> F[(PostgreSQL + pgvector)]
     F --> G[FastAPI AI Service]
-    G --> H[/search]
-    G --> I[/ask]
+    G --> H["GET /search"]
+    G --> I["POST /ask"]
     I --> J[Microsoft Foundry Local]
     J --> K[Qwen2.5-7B]
     K --> L[ASP.NET Core Web API]
