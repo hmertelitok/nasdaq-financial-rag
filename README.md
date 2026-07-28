@@ -7,6 +7,25 @@ Sistem; kullanıcı sorusuyla ilgili rapor parçalarını PostgreSQL ve pgvector
 > **Not:** Bu proje yatırım tavsiyesi üretmez. SEC raporlarının araştırılması, özetlenmesi ve kaynak temelli analiz edilmesi amacıyla geliştirilmiştir.
 
 ---
+## Proje Tanıtım Videosu
+
+Bu proje, Microsoft AI Innovators Summer Internship programı kapsamında geliştirilmiştir. Aşağıdaki videoda projenin geliştirilme süreci, kullanılan teknolojiler ve öğrenme süreci 3 dakikada özetlenmiştir.
+
+<div align="center">
+  <a href="https://youtu.be/mT0T21iGME4" target="_blank">
+    <img src="https://img.youtube.com/vi/mT0T21iGME4/maxresdefault.jpg" alt="NASDAQ Financial RAG Assistant - Proje Tanıtım Videosu" width="600">
+  </a>
+  <br>
+  <sub><i>Videoyu izlemek için görselin üzerine tıklayın.</i></sub>
+</div>
+
+**Video İçeriği:**
+- Projenin geliştirilme süreci ve mimari kararlar
+- Kullanılan teknolojiler (ASP.NET Core, FastAPI, PostgreSQL + pgvector, Microsoft Foundry Local)
+- RAG (Retrieval-Augmented Generation) mimarisi ve uygulama detayları
+- Staj sürecinde edinilen teknik kazanımlar
+
+---
 
 ## Hızlı Başlangıç
 
