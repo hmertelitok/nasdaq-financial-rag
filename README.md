@@ -4,65 +4,90 @@ Microsoft AI Innovators Summer Internship programı kapsamında geliştirilen **
 
 Sistem; kullanıcı sorusuyla ilgili rapor parçalarını PostgreSQL ve pgvector üzerinden getirir, Microsoft Foundry Local üzerinde çalışan yerel dil modeliyle kaynak temelli yanıt üretir ve cevabın dayandığı filing, section, chunk ve benzerlik skorlarını kullanıcıya gösterir.
 
-> Bu proje yatırım tavsiyesi üretmez. SEC raporlarının araştırılması, özetlenmesi ve kaynak temelli analiz edilmesi amacıyla geliştirilmiştir.
+> **Not:** Bu proje yatırım tavsiyesi üretmez. SEC raporlarının araştırılması, özetlenmesi ve kaynak temelli analiz edilmesi amacıyla geliştirilmiştir.
 
 ---
-## Hızlı Başlangıç (ZIP ile)
 
-Kurulumla uğraşmak istemiyor musunuz? Sadece 3 adımda çalıştırın:
+## Hızlı Başlangıç
 
-### 1. ZIP Dosyalarını İndirin
-[Releases sayfasından](https://github.com/hmertelitok/nasdaq-financial-rag/releases) en son sürümü indirin:
-- `Nasdaq-Dotnet-API.zip` (45.9 MB)
-- `Nasdaq-Python-App.zip` (66.7 KB)
+Kullanıcılar için iki farklı kurulum yöntemi sunulmaktadır.
 
-### 2. ZIP'leri Çıkartın
-Her iki ZIP dosyasını da ayrı klasörlere çıkartın.
+### Yöntem 1: Hazır Dağıtımlar ile Kurulum (Önerilen)
 
-### 3. Çalıştırın
-**Önce .NET API'yi başlatın:**
-1. `Nasdaq-Dotnet-API` klasörüne gidin
-2. `baslat.bat` dosyasına çift tıklayın
-3. Bir terminal penceresi açılacak ve API başlayacak
+Kurulum ve derleme süreçleriyle uğraşmadan sistemi çalıştırmak için GitHub Releases üzerinden yayınlanan hazır paketleri kullanabilirsiniz.
 
-**Sonra Python Servislerini başlatın:**
-1. `Nasdaq-Python-App` klasörüne gidin
-2. `baslat.bat` dosyasına çift tıklayın
-3. Otomatik olarak FastAPI ve Streamlit başlayacak
+**1. Paketleri İndirin**
 
-### 4. Tarayıcınızı Açın
+[Releases](https://github.com/hmertelitok/nasdaq-financial-rag/releases) sayfasından en son sürüme ait aşağıdaki arşivleri indirin:
+- `Nasdaq-Dotnet-API.zip`
+- `Nasdaq-Python-App.zip`
+
+**2. Arşivleri Çıkartın**
+
+Her iki arşivi de ayrı dizinlere çıkartın.
+
+**3. Servisleri Başlatın**
+
+*Öncelikle .NET API servisini başlatın:*
+1. `Nasdaq-Dotnet-API` dizinine gidin.
+2. `baslat.bat` dosyasını çalıştırın.
+3. Konsol penceresinde API'nin başarıyla başlatıldığı onayını bekleyin.
+
+*Ardından Python servislerini başlatın:*
+1. `Nasdaq-Python-App` dizinine gidin.
+2. `baslat.bat` dosyasını çalıştırın.
+3. Sistem; gerekli Python ortamını oluşturacak, bağımlılıkları kuracak ve FastAPI ile Streamlit servislerini başlatacaktır.
+
+**4. Arayüze Erişim**
+
 - **Streamlit Dashboard:** http://localhost:8501
-- **FastAPI Docs:** http://127.0.0.1:8001/docs
+- **FastAPI API Belgeleri:** http://127.0.0.1:8001/docs
 
-### Gereksinimler
-- Windows 10/11
-- Docker Desktop (çalışır durumda)
-- Python 3.11+ (otomatik kurulur)
-- .NET SDK (gerekmez - self-contained)
+**Gereksinimler:**
+- Windows 10/11 (WinML desteği için gereklidir)
+- Docker Desktop (PostgreSQL servisi için arka planda çalışmalıdır)
 
-### Durdurmak İçin
-Tüm terminal pencerelerini kapatın ve:
+**Servisleri Durdurma:**
+
+Tüm açık konsol pencerelerini kapatın ve Python uygulama dizininde aşağıdaki komutu çalıştırın:
 ```bash
 docker-compose down
-# Uygulama Görselleri
+```
 
-## Streamlit Arayüzü
+### Yöntem 2: Kaynak Koddan Kurulum (Geliştiriciler İçin)
+
+Projeyi klonladıktan sonra otomatik kurulum betiğini kullanarak geliştirme ortamını hazırlayabilirsiniz:
+
+**Windows:**
+```cmd
+.\setup-and-run.bat
+```
+
+**Mac / Linux:**
+```bash
+chmod +x setup-and-run.sh
+./setup-and-run.sh
+```
+
+Betik; Docker volume'ünü oluşturacak, ortam değişkenlerini hazırlayacak, bağımlılıkları kuracak ve tüm servisleri başlatacaktır.
+
+---
+
+## Uygulama Görselleri
+
+### Streamlit Arayüzü
 
 ASP.NET Core, FastAPI, PostgreSQL + pgvector ve Microsoft Foundry Local bileşenlerini tek bir araştırma arayüzünde birleştiren kontrol paneli.
 
 ![NASDAQ Financial RAG Dashboard](docs/images/streamlit-dashboard.png)
 
----
-
-## Kaynak Temelli RAG Cevabı
+### Kaynak Temelli RAG Cevabı
 
 Kullanıcı soruları, seçilen SEC 10-K rapor parçaları kullanılarak kaynak referanslarıyla yanıtlanır.
 
 ![NASDAQ Financial RAG Result](docs/images/streamlit-rag-result.png)
 
----
-
-## Kaynak Şeffaflığı
+### Kaynak Şeffaflığı
 
 Her cevap için şirket, filing tarihi, bölüm, chunk ID, benzerlik skoru, retrieval türü ve embedding modeli görüntülenir.
 
@@ -79,7 +104,7 @@ Her cevap için şirket, filing tarihi, bölüm, chunk ID, benzerlik skoru, retr
 
 ---
 
-# Proje Amacı
+## Proje Amacı
 
 SEC 10-K raporları uzun, teknik ve manuel olarak incelenmesi zaman alan finansal dokümanlardır.
 
@@ -96,7 +121,7 @@ bir finansal RAG sistemi oluşturmaktır.
 
 ---
 
-# Desteklenen Şirketler
+## Desteklenen Şirketler
 
 | Ticker | Şirket |
 |---------|---------|
@@ -108,7 +133,7 @@ bir finansal RAG sistemi oluşturmaktır.
 
 ---
 
-# Veri Kaynağı
+## Veri Kaynağı
 
 Projede SEC EDGAR üzerinden alınan 10-K raporları kullanılmaktadır.
 
@@ -122,7 +147,7 @@ bulunmaktadır.
 
 ---
 
-# Temel Özellikler
+## Temel Özellikler
 
 - SEC 10-K raporlarını indirme ve işleme
 - Finansal doküman temizleme ve chunking
@@ -145,9 +170,9 @@ bulunmaktadır.
 
 ---
 
-# Kullanılan Teknolojiler
+## Kullanılan Teknolojiler
 
-## AI ve Veri İşleme
+### AI ve Veri İşleme
 
 - Python
 - Microsoft Foundry Local
@@ -157,25 +182,25 @@ bulunmaktadır.
 - Semantic Search
 - Embeddings
 
-## Backend
+### Backend
 
 - FastAPI
 - ASP.NET Core Web API
 - C#
 
-## Veri Katmanı
+### Veri Katmanı
 
 - PostgreSQL
 - pgvector
 - SEC EDGAR
 
-## Arayüz
+### Arayüz
 
 - Streamlit
 
 ---
 
-# Orkestrasyon Framework Kararı
+## Orkestrasyon Framework Kararı
 
 Mevcut RAG hattı belirli, kontrollü ve test edilebilir olduğu için Semantic Kernel veya Microsoft Agent Framework bu sürüme eklenmemiştir.
 
@@ -188,44 +213,44 @@ Bu kararla:
 
 Detay:
 
-```
+```text
 docs/orchestration_framework_assessment.md
 ```
 
 ---
 
-# Güncel Sistem Mimarisi
+## Güncel Sistem Mimarisi
 
 ```text
 SEC EDGAR 10-K Reports
-          │
-          ▼
+          |
+          v
 Python Data Processing
-Cleaning → Chunking → Embeddings
-          │
-          ▼
+Cleaning -> Chunking -> Embeddings
+          |
+          v
 PostgreSQL + pgvector
-          │
-          ▼
+          |
+          v
 FastAPI AI Service
-/search → /ask
-          │
-          ▼
+/search -> /ask
+          |
+          v
 Microsoft Foundry Local
 Qwen2.5-7B
-          │
-          ▼
+          |
+          v
 ASP.NET Core Web API
-          │
-          ▼
+          |
+          v
 Streamlit / API Clients
 ```
 
 ---
 
-# Servis Sorumlulukları
+## Servis Sorumlulukları
 
-## Python
+### Python
 
 - SEC veri işleme
 - Metin temizleme
@@ -236,9 +261,7 @@ Streamlit / API Clients
 - RAG cevap üretimi
 - Kalite değerlendirmesi
 
----
-
-## FastAPI
+### FastAPI
 
 ASP.NET Core tarafından kullanılan dahili AI servisidir.
 
@@ -248,9 +271,7 @@ ASP.NET Core tarafından kullanılan dahili AI servisidir.
 | GET | /search | Semantic Search |
 | POST | /ask | Kaynak temelli RAG cevabı |
 
----
-
-## ASP.NET Core Web API
+### ASP.NET Core Web API
 
 Sistemin dış API katmanıdır.
 
@@ -266,7 +287,7 @@ Sistemin dış API katmanıdır.
 
 ---
 
-# RAG Cevap Kalite Sistemi
+## RAG Cevap Kalite Sistemi
 
 Projede yalnızca HTTP cevabının başarılı olması değil, üretilen cevabın içerik kalitesi de otomatik olarak doğrulanmaktadır.
 
@@ -290,7 +311,7 @@ Kontroller:
 
 ---
 
-# Kalite Değerlendirme Sonucu
+## Kalite Değerlendirme Sonucu
 
 14 Temmuz 2026 tarihinde gerçekleştirilen otomatik kalite testlerinde sistem tüm şirketlerde başarılı sonuç üretmiştir.
 
@@ -311,7 +332,7 @@ Başarı Oranı: %100
 
 Raporlar:
 
-```
+```text
 reports/rag-quality/rag_quality_evaluation.json
 reports/rag-quality/rag_quality_evaluation.csv
 ```
@@ -325,7 +346,7 @@ reports/rag-quality/rag_quality_evaluation.csv
 
 ---
 
-# Örnek Sorular
+## Örnek Sorular
 
 ```text
 Microsoft'un bulut bilişim ve yapay zekâ yatırımları şirketin büyüme stratejisini nasıl destekliyor?
@@ -345,7 +366,7 @@ Amazon'un AWS, lojistik, operasyonel maliyetler ve düzenleyici riskleri nelerdi
 
 ---
 
-# Proje Durumu
+## Proje Durumu
 
 Tamamlanan bileşenler:
 
@@ -365,20 +386,17 @@ Tamamlanan bileşenler:
 - Streamlit arayüzü
 - Uçtan uca testler
 - Kurulum dokümantasyonu
+- Otomatik CI/CD ve dağıtım altyapısı
 
 ---
 
-# Kurulum ve Çalıştırma
+## Kurulum ve Çalıştırma
 
-> **Docker Notu**
->
-> `docker-compose.yml` yalnızca PostgreSQL + pgvector servisini container içerisinde çalıştırır.
->
-> Microsoft Foundry Local, Windows/WinML donanım hızlandırmasına ihtiyaç duyduğu için FastAPI, ASP.NET Core ve Streamlit host makine üzerinde çalıştırılır.
+> **Docker Notu:** `docker-compose.yml` yalnızca PostgreSQL + pgvector servisini container içerisinde çalıştırır. Microsoft Foundry Local, Windows/WinML donanım hızlandırmasına ihtiyaç duyduğu için FastAPI, ASP.NET Core ve Streamlit host makine üzerinde çalıştırılır.
 
 Ayrıntılı kurulum:
 
-```
+```text
 docs/setup_and_run.md
 ```
 
@@ -386,28 +404,28 @@ Servis sırası:
 
 ```text
 PostgreSQL + pgvector
-          │
-          ▼
+          |
+          v
 FastAPI
-          │
-          ▼
+          |
+          v
 ASP.NET Core
-          │
-          ▼
+          |
+          v
 Streamlit
 ```
 
 ---
 
-# API Dokümantasyonu
+## API Dokümantasyonu
 
-```
+```text
 docs/postgres_pgvector_api.md
 ```
 
 ---
 
-# Yasal Uyarı
+## Yasal Uyarı
 
 Bu proje yatırım tavsiyesi vermez.
 
