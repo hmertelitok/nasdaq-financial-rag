@@ -7,7 +7,43 @@ Sistem; kullanıcı sorusuyla ilgili rapor parçalarını PostgreSQL ve pgvector
 > Bu proje yatırım tavsiyesi üretmez. SEC raporlarının araştırılması, özetlenmesi ve kaynak temelli analiz edilmesi amacıyla geliştirilmiştir.
 
 ---
+## Hızlı Başlangıç (ZIP ile)
 
+Kurulumla uğraşmak istemiyor musunuz? Sadece 3 adımda çalıştırın:
+
+### 1. ZIP Dosyalarını İndirin
+[Releases sayfasından](https://github.com/hmertelitok/nasdaq-financial-rag/releases) en son sürümü indirin:
+- `Nasdaq-Dotnet-API.zip` (45.9 MB)
+- `Nasdaq-Python-App.zip` (66.7 KB)
+
+### 2. ZIP'leri Çıkartın
+Her iki ZIP dosyasını da ayrı klasörlere çıkartın.
+
+### 3. Çalıştırın
+**Önce .NET API'yi başlatın:**
+1. `Nasdaq-Dotnet-API` klasörüne gidin
+2. `baslat.bat` dosyasına çift tıklayın
+3. Bir terminal penceresi açılacak ve API başlayacak
+
+**Sonra Python Servislerini başlatın:**
+1. `Nasdaq-Python-App` klasörüne gidin
+2. `baslat.bat` dosyasına çift tıklayın
+3. Otomatik olarak FastAPI ve Streamlit başlayacak
+
+### 4. Tarayıcınızı Açın
+- **Streamlit Dashboard:** http://localhost:8501
+- **FastAPI Docs:** http://127.0.0.1:8001/docs
+
+### Gereksinimler
+- Windows 10/11
+- Docker Desktop (çalışır durumda)
+- Python 3.11+ (otomatik kurulur)
+- .NET SDK (gerekmez - self-contained)
+
+### Durdurmak İçin
+Tüm terminal pencerelerini kapatın ve:
+```bash
+docker-compose down
 # Uygulama Görselleri
 
 ## Streamlit Arayüzü
