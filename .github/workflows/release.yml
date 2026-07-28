@@ -31,7 +31,7 @@ jobs:
       # ============================================
       - name: .NET API'yi Publish Et (Self-Contained)
         run: |
-          dotnet publish .api/NasdaqFinancialRag.Api/NasdaqFinancialRag.Api.csproj `
+          dotnet publish api/NasdaqFinancialRag.Api/NasdaqFinancialRag.Api.csproj `
             -c Release `
             -r win-x64 `
             --self-contained true `
@@ -46,10 +46,11 @@ jobs:
       - name: Python App Klasörünü Hazırla
         run: |
           mkdir publish/python-app
-          Copy-Item -Path src, app, config -Destination publish/python-app -Recurse -ErrorAction SilentlyContinue
-          Copy-Item -Path requirements.txt -Destination publish/python-app
-          Copy-Item -Path docker-compose.yml -Destination publish/python-app
-          Copy-Item -Path .env.example -Destination publish/python-app
+          # Hata almasın diye ErrorAction SilentlyContinue ekledik
+          Copy-Item -Path src, .app, config -Destination publish/python-app -Recurse -ErrorAction SilentlyContinue
+          Copy-Item -Path requirements.txt -Destination publish/python-app -ErrorAction SilentlyContinue
+          Copy-Item -Path docker-compose.yml -Destination publish/python-app -ErrorAction SilentlyContinue
+          Copy-Item -Path .env.example -Destination publish/python-app -ErrorAction SilentlyContinue
         shell: pwsh
 
       - name: Python Başlatma Scripti Oluştur
@@ -87,7 +88,7 @@ jobs:
           REM FastAPI ve Streamlit'i ayrı pencerelerde başlat
           start "FastAPI Service" cmd /k ".venv\Scripts\python.exe -m uvicorn pgvector_search_service:app --app-dir src --host 127.0.0.1 --port 8001"
           timeout /t 3 /nobreak >nul
-          start "Streamlit App" cmd /k ".venv\Scripts\python.exe -m streamlit run app\streamlit_app.py"
+          start "Streamlit App" cmd /k ".venv\Scripts\python.exe -m streamlit run .app\streamlit_app.py"
           
           pause
           "@
