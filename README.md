@@ -1,5 +1,12 @@
 # NASDAQ Financial RAG Assistant
 
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/hmertelitok/nasdaq-financial-rag/actions)
+[![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
+[![.NET](https://img.shields.io/badge/.NET-8.0-purple)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/hmertelitok/nasdaq-financial-rag)](https://github.com/hmertelitok/nasdaq-financial-rag/releases)
+[![Stars](https://img.shields.io/github/stars/hmertelitok/nasdaq-financial-rag)](https://github.com/hmertelitok/nasdaq-financial-rag/stargazers)
+
 Microsoft AI Innovators Summer Internship programı kapsamında geliştirilen **NASDAQ Financial RAG Assistant**, seçili NASDAQ şirketlerinin SEC 10-K raporları üzerinde çalışan Türkçe bir finansal araştırma asistanıdır.
 
 Sistem; kullanıcı sorusuyla ilgili rapor parçalarını PostgreSQL ve pgvector üzerinden getirir, Microsoft Foundry Local üzerinde çalışan yerel dil modeliyle kaynak temelli yanıt üretir ve cevabın dayandığı filing, section, chunk ve benzerlik skorlarını kullanıcıya gösterir.
@@ -7,6 +14,30 @@ Sistem; kullanıcı sorusuyla ilgili rapor parçalarını PostgreSQL ve pgvector
 > **Not:** Bu proje yatırım tavsiyesi üretmez. SEC raporlarının araştırılması, özetlenmesi ve kaynak temelli analiz edilmesi amacıyla geliştirilmiştir.
 
 ---
+
+## İçindekiler
+
+- [Proje Tanıtım Videosu](#proje-tanıtım-videosu)
+- [Hızlı Başlangıç](#hızlı-başlangıç)
+- [Uygulama Görselleri](#uygulama-görselleri)
+- [Proje Amacı](#proje-amacı)
+- [Desteklenen Şirketler](#desteklenen-şirketler)
+- [Veri Kaynağı](#veri-kaynağı)
+- [Temel Özellikler](#temel-özellikler)
+- [Kullanılan Teknolojiler](#kullanılan-teknolojiler)
+- [Sistem Mimarisi](#sistem-mimarisi)
+- [Servis Sorumlulukları](#servis-sorumlulukları)
+- [RAG Cevap Kalite Sistemi](#rag-cevap-kalite-sistemi)
+- [Kalite Değerlendirme Sonucu](#kalite-değerlendirme-sonucu)
+- [Örnek Sorular](#örnek-sorular)
+- [Proje Durumu](#proje-durumu)
+- [Katkıda Bulunma](#katkıda-bulunma)
+- [Lisans](#lisans)
+- [İletişim](#iletişim)
+- [Teşekkürler](#teşekkürler)
+
+---
+
 ## Proje Tanıtım Videosu
 
 Bu proje, Microsoft AI Innovators Summer Internship programı kapsamında geliştirilmiştir. Aşağıdaki videoda projenin geliştirilme süreci, kullanılan teknolojiler ve öğrenme süreci 3 dakikada özetlenmiştir.
@@ -219,50 +250,22 @@ bulunmaktadır.
 
 ---
 
-## Orkestrasyon Framework Kararı
+## Sistem Mimarisi
 
-Mevcut RAG hattı belirli, kontrollü ve test edilebilir olduğu için Semantic Kernel veya Microsoft Agent Framework bu sürüme eklenmemiştir.
-
-Bu kararla:
-
-- Deterministik RAG mimarisi korunmuştur.
-- Retrieval, cevap üretimi ve kalite kontrolü mevcut servis sınırlarında tutulmuştur.
-- Gereksiz framework bağımlılığı önlenmiştir.
-- Agent tabanlı orchestration ileride gerçek ihtiyaç oluştuğunda değerlendirilecektir.
-
-Detay:
-
-```text
-docs/orchestration_framework_assessment.md
-```
-
----
-
-## Güncel Sistem Mimarisi
-
-```text
-SEC EDGAR 10-K Reports
-          |
-          v
-Python Data Processing
-Cleaning -> Chunking -> Embeddings
-          |
-          v
-PostgreSQL + pgvector
-          |
-          v
-FastAPI AI Service
-/search -> /ask
-          |
-          v
-Microsoft Foundry Local
-Qwen2.5-7B
-          |
-          v
-ASP.NET Core Web API
-          |
-          v
-Streamlit / API Clients
+```mermaid
+graph TD
+    A[SEC EDGAR 10-K Reports] --> B[Python Data Processing]
+    B --> C[Cleaning]
+    C --> D[Chunking]
+    D --> E[Embeddings]
+    E --> F[(PostgreSQL + pgvector)]
+    F --> G[FastAPI AI Service]
+    G --> H[/search]
+    G --> I[/ask]
+    I --> J[Microsoft Foundry Local]
+    J --> K[Qwen2.5-7B]
+    K --> L[ASP.NET Core Web API]
+    L --> M[Streamlit / API Clients]
 ```
 
 ---
@@ -441,6 +444,42 @@ Streamlit
 ```text
 docs/postgres_pgvector_api.md
 ```
+
+---
+
+## Katkıda Bulunma
+
+Katkılarınızı memnuniyetle karşılarız. Lütfen aşağıdaki adımları izleyin:
+
+1. Projeyi fork edin
+2. Yeni bir branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Değişikliklerinizi commit edin (`git commit -m 'feat: add amazing feature'`)
+4. Branch'inizi push edin (`git push origin feature/amazing-feature`)
+5. Pull Request açın
+
+---
+
+## Lisans
+
+Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
+
+---
+
+## İletişim
+
+**Halis Mert Elitok**
+- GitHub: [@hmertelitok](https://github.com/hmertelitok)
+- LinkedIn: [linkedin.com/in/hmertelitok](https://linkedin.com/in/hmertelitok)
+- Email: [email adresiniz]
+
+---
+
+## Teşekkürler
+
+- **Microsoft AI Innovators** - Staj programı ve mentorluk desteği
+- **SEC EDGAR** - Açık veri kaynağı
+- **pgvector** - PostgreSQL için vektör arama desteği
+- **Microsoft Foundry Local** - Yerel model inference altyapısı
 
 ---
 
