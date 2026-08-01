@@ -1,5 +1,7 @@
 # NASDAQ Financial RAG Assistant
 
+[English](README.en.md) | **Türkçe**
+
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/hmertelitok/nasdaq-financial-rag/actions)
 [![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple)](https://dotnet.microsoft.com/)
